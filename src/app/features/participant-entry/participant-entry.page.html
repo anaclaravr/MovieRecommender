@@ -1,0 +1,43 @@
+<section class="page-shell">
+  <div class="page-panel glass-surface">
+    <span class="page-kicker">Step 1 of 4</span>
+    <h1>Participant entry</h1>
+    <p class="lead">
+      Capture the participant identity first so the later recommendation flow can
+      stay attached to a single mocked session.
+    </p>
+
+    <form class="entry-form" (ngSubmit)="submit()">
+      <label class="field">
+        <span>Name *</span>
+        <input
+          type="text"
+          name="name"
+          [(ngModel)]="name"
+          placeholder="Enter participant name"
+          required
+        />
+      </label>
+
+      <label class="field">
+        <span>Email (optional)</span>
+        <input
+          type="email"
+          name="email"
+          [(ngModel)]="email"
+          placeholder="name@example.com"
+        />
+      </label>
+
+      <p class="helper-text">
+        The continue action stays disabled until the participant name is filled.
+      </p>
+
+      <div class="page-actions">
+        <button class="action-button" type="submit" [disabled]="!canContinue">
+          Continue to movie selection
+        </button>
+      </div>
+    </form>
+  </div>
+</section>
