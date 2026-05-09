@@ -1,19 +1,33 @@
-<section class="page-shell">
-  <div class="page-panel glass-surface loading-panel">
-    <span class="page-kicker">Step 3 of 4</span>
-    <h1>Loading</h1>
-    <p>
-      This is a placeholder transition step for the mocked flow. No timers,
-      no backend requests, and no recommendation generation logic are running yet.
-    </p>
+<section class="loading-page" aria-live="polite" aria-busy="true">
+  <div class="loading-page__ambient loading-page__ambient--primary" aria-hidden="true"></div>
+  <div class="loading-page__ambient loading-page__ambient--secondary" aria-hidden="true"></div>
 
-    <div class="page-actions">
-      <a class="action-button action-button--secondary" routerLink="/movie-selection">
-        Back
-      </a>
-      <a class="action-button" routerLink="/recommendations">
-        Continue to recommendations
-      </a>
+  <main class="loading-page__content">
+    <div class="loading-badge" aria-hidden="true">
+      <span class="loading-badge__ring"></span>
+      <span class="loading-badge__core">
+        <i class="pi pi-sparkles"></i>
+      </span>
     </div>
-  </div>
+
+    <div class="loading-page__copy">
+      <h1>Analisando suas preferências</h1>
+      <p>Estamos criando recomendações personalizadas para você...</p>
+    </div>
+
+    <div class="loading-dots" aria-label="Carregando recomendações">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+
+    <ul class="analysis-step-list" aria-live="polite" aria-label="Etapas da análise">
+      @for (step of visibleAnalysisSteps(); track step) {
+        <li class="analysis-step">
+          <span class="analysis-step__mark" aria-hidden="true"></span>
+          <span>{{ step }}</span>
+        </li>
+      }
+    </ul>
+  </main>
 </section>

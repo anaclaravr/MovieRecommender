@@ -204,12 +204,12 @@ const POSTER_GRADIENTS = [
     'linear-gradient(160deg, #183149 0%, #446c8d 48%, #9ec3de 100%)'
 ];
 const GENRE_LABELS = {
-    Action: 'Acao',
+    Action: 'Ação',
     Adventure: 'Aventura',
-    Animation: 'Animacao',
-    Comedy: 'Comedia',
+    Animation: 'Animação',
+    Comedy: 'Comédia',
     Drama: 'Drama',
-    Family: 'Familia',
+    Family: 'Família',
     Horror: 'Terror',
     Mystery: 'Misterio',
     Romance: 'Romance',
@@ -391,7 +391,7 @@ export class MovieSelectionPage {
             i0.ɵɵrepeaterCreate(8, MovieSelectionPage_For_9_Template, 3, 3, "div", 8, i0.ɵɵrepeaterTrackByIdentity);
             i0.ɵɵdomElementEnd()();
             i0.ɵɵdomElementStart(10, "div", 9)(11, "h1");
-            i0.ɵɵtext(12, "Selecione 5 filmes que voce ama");
+            i0.ɵɵtext(12, "Selecione 5 filmes que você ama");
             i0.ɵɵdomElement(13, "br");
             i0.ɵɵtext(14, "para entendermos seu gosto.");
             i0.ɵɵdomElementEnd()();

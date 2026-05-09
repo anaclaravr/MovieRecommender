@@ -12,12 +12,14 @@ describe('MovieSelectionPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MovieSelectionPage],
-      providers: [provideRouter([])]
+      providers: [provideRouter([])],
     }).compileComponents();
+
+    participantSessionService = TestBed.inject(ParticipantSessionService);
+    participantSessionService.reset();
 
     const fixture = TestBed.createComponent(MovieSelectionPage);
     component = fixture.componentInstance;
-    participantSessionService = TestBed.inject(ParticipantSessionService);
     fixture.detectChanges();
   });
 
@@ -31,17 +33,17 @@ describe('MovieSelectionPage', () => {
 
     expect(component.filteredCards().length).toBeGreaterThan(0);
     expect(component.filteredCards().every((card) => card.movie.genres.includes('Adventure'))).toBe(
-      true
+      true,
     );
   });
 
   it('exposes an icon class for each genre filter option', () => {
     expect(component.genreOptions.length).toBeGreaterThan(0);
     expect(component.genreOptions.every((genre) => genre.iconClass.startsWith('pi pi-'))).toBe(
-      true
+      true,
     );
     expect(component.genreOptions.find((genre) => genre.id === 'all')?.iconClass).toBe(
-      'pi pi-sparkles'
+      'pi pi-sparkles',
     );
   });
 
@@ -77,7 +79,7 @@ describe('MovieSelectionPage', () => {
     expect(component.canContinue()).toBe(false);
     expect(participantSessionService.session().selectedSeedMovieIds).toEqual([
       selectedMovieIds[0],
-      selectedMovieIds[2]
+      selectedMovieIds[2],
     ]);
   });
 
@@ -101,5 +103,31 @@ describe('MovieSelectionPage', () => {
 
     component.toggleMovieDetails(targetMovieId);
     expect(component.isDetailsExpanded(targetMovieId)).toBe(false);
+  });
+
+  it('keeps a second-row movie on the second row when switching expanded details', () => {
+    component.viewportWidth.set(1440);
+
+    const firstExpandedMovieId = MOCK_MOVIES[2].id;
+    const secondExpandedMovieId = MOCK_MOVIES[3].id;
+
+    component.toggleMovieDetails(firstExpandedMovieId);
+    component.toggleMovieDetails(secondExpandedMovieId);
+
+    const visualMovieIds = component
+      .paginatedCards()
+      .map((card) => card.movie.id)
+      .sort((leftMovieId, rightMovieId) => {
+        return component.movieCardOrder(leftMovieId) - component.movieCardOrder(rightMovieId);
+      });
+
+    expect(component.movieCardOrder(secondExpandedMovieId)).toBe(5);
+    expect(visualMovieIds.slice(0, 5)).toEqual([
+      MOCK_MOVIES[2].id,
+      MOCK_MOVIES[0].id,
+      MOCK_MOVIES[1].id,
+      MOCK_MOVIES[4].id,
+      MOCK_MOVIES[5].id,
+    ]);
   });
 });

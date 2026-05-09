@@ -1,19 +1,297 @@
-<section class="page-shell">
-  <div class="page-panel glass-surface">
-    <span class="page-kicker">Step 4 of 4</span>
-    <h1>Recommendations</h1>
-    <p class="lead">
-      This screen is still a shell. For now it exposes the current participant
-      session so the next UI phase can build on a stable routed foundation.
-    </p>
+<section class="recommendations-page" [class.is-details-drawer-open]="detailsCard()">
+  <div
+    class="recommendations-page__ambient recommendations-page__ambient--primary"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="recommendations-page__ambient recommendations-page__ambient--secondary"
+    aria-hidden="true"
+  ></div>
 
-    <h2>Current mocked session</h2>
-    <pre class="debug-output">{{ session() | json }}</pre>
+  <div class="recommendations-page__frame">
+    <div class="flow-nav">
+      <nav class="flow-breadcrumb" aria-label="Caminho">
+        <ol>
+          <li>
+            <button class="flow-breadcrumb__link" type="button" (click)="goToParticipantEntry()">
+              Entrada
+            </button>
+          </li>
+          <li>
+            <button class="flow-breadcrumb__link" type="button" (click)="goToPreviousStep()">
+              Seleção de filmes
+            </button>
+          </li>
+          <li aria-current="page">Recomendações</li>
+        </ol>
+      </nav>
 
-    <div class="page-actions">
-      <a class="action-button action-button--secondary" routerLink="/loading">
-        Back
-      </a>
+      <div class="flow-nav__controls recommendations-page__actions">
+        <button class="flow-back-button" type="button" (click)="goToPreviousStep()">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          <span>Voltar</span>
+        </button>
+
+        <button
+          class="glass-button glass-button--light glass-button--cta recommendations-page__finish-button"
+          type="button"
+          (click)="finishRecommendations()"
+        >
+          <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
+            <i class="pi pi-check"></i>
+          </span>
+          <span class="glass-button__content">Finalizar</span>
+        </button>
+      </div>
     </div>
+
+    <header class="recommendations-hero">
+      <div class="recommendations-hero__copy">
+        <h1>Suas recomendações</h1>
+        <p>Baseado nas suas escolhas, encontramos esses filmes perfeitos para você.</p>
+      </div>
+
+      <div class="recommendations-hero__summary glass-surface" aria-label="Resumo das escolhas">
+        <i class="pi pi-check-circle" aria-hidden="true"></i>
+        <div>
+          <strong>{{ wouldWatchCount() }}</strong>
+          <span>marcados como assistiria</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="liked-section" aria-label="Você gostou de">
+      <div class="section-heading">
+        <span class="section-heading__kicker">Você gostou de</span>
+      </div>
+
+      @if (seedCards().length) {
+        <div class="liked-strip" aria-label="Filmes selecionados anteriormente">
+          @for (card of seedCards(); track card.movie.id) {
+            <article class="liked-card glass-surface">
+              <div
+                class="liked-card__poster"
+                [style.--poster-gradient]="card.posterGradient"
+                [style.--poster-image]="card.posterImage"
+              >
+                <span>{{ card.movie.year }}</span>
+              </div>
+              <div class="liked-card__meta">
+                <h3>{{ card.movie.title }}</h3>
+                <p>{{ card.genresLabel }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="liked-section__empty glass-surface">
+          Selecione filmes na etapa anterior para personalizar melhor esta área.
+        </p>
+      }
+    </section>
+
+    <section class="recommendations-section" aria-label="Recomendados para você">
+      <div class="section-heading section-heading--wide">
+        <div>
+          <span class="section-heading__kicker">Recomendados para você</span>
+        </div>
+      </div>
+
+      <div class="recommendation-grid">
+        @for (card of paginatedRecommendationCards(); track card.movie.id) {
+          <article
+            class="recommendation-card glass-surface"
+            tabindex="0"
+            role="button"
+            [class.is-top-ranked]="isTopRecommendation(card)"
+            [class.is-primary-recommendation]="isPrimaryRecommendation(card)"
+            [class.is-expanded]="isDetailsExpanded(card.movie.id)"
+            [attr.aria-label]="'Abrir sinopse de ' + card.movie.title"
+            [attr.aria-expanded]="isDetailsExpanded(card.movie.id)"
+            (click)="openDetailsFromCard(card.movie.id, $event)"
+            (keydown)="onRecommendationCardKeydown($event, card.movie.id)"
+          >
+            <div
+              class="recommendation-card__poster"
+              [style.--poster-gradient]="card.posterGradient"
+              [style.--poster-image]="card.posterImage"
+            >
+              @if (card.rankLabel) {
+                <span class="recommendation-card__rank">{{ card.rankLabel }}</span>
+              }
+
+              <div class="recommendation-card__poster-copy">
+                <span>{{ card.movie.year }}</span>
+                <strong>{{ card.movie.title }}</strong>
+              </div>
+            </div>
+
+            <div class="recommendation-card__body">
+              <div class="recommendation-card__title-row">
+                <div>
+                  @if (card.mediatedCue) {
+                    <span class="recommendation-card__match">{{ card.mediatedCue }}</span>
+                  } @else {
+                    <span class="recommendation-card__match recommendation-card__match--neutral">
+                      Recomendado pelo seu perfil
+                    </span>
+                  }
+                  <h3>{{ card.movie.title }}</h3>
+                </div>
+              </div>
+
+              <p class="recommendation-card__genres">{{ card.genresLabel }}</p>
+
+              <div class="recommendation-card__actions">
+                <button
+                  class="interest-button interest-button--primary"
+                  type="button"
+                  [class.is-selected]="isMarkedWouldWatch(card.movie.id)"
+                  [attr.aria-pressed]="isMarkedWouldWatch(card.movie.id)"
+                  (click)="toggleWouldWatch(card.movie.id, $event)"
+                >
+                  <i
+                    [class]="isMarkedWouldWatch(card.movie.id) ? 'pi pi-check' : 'pi pi-plus'"
+                    aria-hidden="true"
+                  ></i>
+                  <span>{{ isMarkedWouldWatch(card.movie.id) ? 'Assistiria' : 'Assistiria' }}</span>
+                </button>
+              </div>
+            </div>
+          </article>
+        }
+      </div>
+
+      @if (showRecommendationsPagination()) {
+        <nav class="flow-pagination" aria-label="Paginação de recomendações">
+          <label class="flow-pagination__size">
+            <span>Filmes por página</span>
+            <select
+              [value]="recommendationsPageSize()"
+              (change)="updateRecommendationPageSize(($any($event.target).value ?? '').toString())"
+            >
+              @for (size of pageSizeOptions; track size) {
+                <option [value]="size">{{ size }}</option>
+              }
+            </select>
+          </label>
+
+          <p class="flow-pagination__range">{{ recommendationPaginationRangeLabel() }}</p>
+
+          <div class="flow-pagination__page-status">
+            <button
+              class="flow-pagination__icon-button"
+              type="button"
+              aria-label="Página anterior"
+              [disabled]="currentRecommendationPageIndex() === 0"
+              (click)="goToPreviousRecommendationPage()"
+            >
+              <i class="pi pi-chevron-left" aria-hidden="true"></i>
+            </button>
+
+            <span>
+              Página {{ currentRecommendationPageIndex() + 1 }} de {{ recommendationPageCount() }}
+            </span>
+
+            <button
+              class="flow-pagination__icon-button"
+              type="button"
+              aria-label="Próxima página"
+              [disabled]="currentRecommendationPageIndex() >= recommendationPageCount() - 1"
+              (click)="goToNextRecommendationPage()"
+            >
+              <i class="pi pi-chevron-right" aria-hidden="true"></i>
+            </button>
+          </div>
+        </nav>
+      }
+    </section>
   </div>
+
+  <aside
+    class="details-drawer glass-surface"
+    [class.is-open]="detailsCard()"
+    [attr.aria-hidden]="!detailsCard()"
+    aria-labelledby="details-drawer-title"
+  >
+    @if (detailsCard(); as card) {
+      <button
+        class="details-drawer__close"
+        type="button"
+        aria-label="Fechar sinopse"
+        (click)="closeDetails()"
+      >
+        <i class="pi pi-times" aria-hidden="true"></i>
+      </button>
+
+      <div
+        class="details-drawer__poster"
+        [style.--poster-gradient]="card.posterGradient"
+        [style.--poster-image]="card.posterImage"
+      >
+        @if (card.rankLabel) {
+          <span class="details-drawer__rank">{{ card.rankLabel }}</span>
+        }
+      </div>
+
+      <div class="details-drawer__content">
+        <div class="details-drawer__scroll">
+          @if (card.mediatedCue) {
+            <span class="details-drawer__cue">{{ card.mediatedCue }}</span>
+          }
+
+          <div>
+            <h2 id="details-drawer-title">{{ card.movie.title }}</h2>
+            <p class="details-drawer__meta">{{ card.genresLabel }}</p>
+          </div>
+
+          <div class="details-drawer__facts" aria-label="Informações do filme">
+            <div class="details-drawer__fact">
+              <i class="pi pi-calendar" aria-hidden="true"></i>
+              <span>Ano</span>
+              <strong>{{ card.movie.year }}</strong>
+            </div>
+
+            <div class="details-drawer__fact">
+              <i class="pi pi-clock" aria-hidden="true"></i>
+              <span>Duração</span>
+              <strong>{{ card.durationLabel }}</strong>
+            </div>
+
+            <div class="details-drawer__fact">
+              <i class="pi pi-star" aria-hidden="true"></i>
+              <span>Nota</span>
+              <strong>{{ card.ratingLabel }}</strong>
+            </div>
+          </div>
+
+          <div class="details-drawer__text-block">
+            <span>Diretor</span>
+            <p>{{ card.director }}</p>
+          </div>
+
+          <div class="details-drawer__synopsis">
+            <span>Sinopse</span>
+            <p>{{ card.movie.synopsis }}</p>
+          </div>
+        </div>
+
+        <div class="details-drawer__action-bar">
+          <button
+            class="interest-button interest-button--primary details-drawer__action"
+            type="button"
+            [class.is-selected]="isMarkedWouldWatch(card.movie.id)"
+            [attr.aria-pressed]="isMarkedWouldWatch(card.movie.id)"
+            (click)="toggleWouldWatch(card.movie.id, $event)"
+          >
+            <i
+              [class]="isMarkedWouldWatch(card.movie.id) ? 'pi pi-check' : 'pi pi-plus'"
+              aria-hidden="true"
+            ></i>
+            <span>Assistiria</span>
+          </button>
+        </div>
+      </div>
+    }
+  </aside>
 </section>
