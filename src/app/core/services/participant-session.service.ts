@@ -1,8 +1,25 @@
 import { Injectable, signal } from '@angular/core';
 
-import { AppVariant, ParticipantSession } from '../models/participant-session';
+import {
+  AppVariant,
+  ParticipantAgeRange,
+  ParticipantEducationLevel,
+  ParticipantSession,
+  ParticipantSex,
+} from '../models/participant-session';
 
 const SESSION_STORAGE_KEY = 'movie-recommender-participant-session';
+const AGE_RANGES: ParticipantAgeRange[] = ['18-24', '25-30', '31-36', '37-42', '43-48', '49-54', '55-60'];
+const EDUCATION_LEVELS: ParticipantEducationLevel[] = [
+  'high-school',
+  'technical',
+  'undergraduate-student',
+  'undergraduate-complete',
+  'postgraduate',
+  'masters',
+  'doctorate',
+];
+const SEX_OPTIONS: ParticipantSex[] = ['female', 'male'];
 
 function createInitialSession(): ParticipantSession {
   return {
@@ -25,6 +42,11 @@ function isParticipantSession(value: unknown): value is ParticipantSession {
     Array.isArray(session.selectedSeedMovieIds) &&
     session.selectedSeedMovieIds.every((id) => typeof id === 'string') &&
     (session.email === undefined || typeof session.email === 'string') &&
+    (session.ageRange === undefined || AGE_RANGES.includes(session.ageRange)) &&
+    (session.profession === undefined || typeof session.profession === 'string') &&
+    (session.educationLevel === undefined || EDUCATION_LEVELS.includes(session.educationLevel)) &&
+    (session.undergraduateCourse === undefined || typeof session.undergraduateCourse === 'string') &&
+    (session.sex === undefined || SEX_OPTIONS.includes(session.sex)) &&
     (session.variant === 'mediated' || session.variant === 'neutral')
   );
 }
@@ -63,14 +85,31 @@ export class ParticipantSessionService {
 
   readonly session = this.sessionState.asReadonly();
 
-  setParticipant(name: string, email?: string): void {
+  setParticipant(
+    name: string,
+    email: string | undefined,
+    demographics: {
+      ageRange: ParticipantAgeRange;
+      profession: string;
+      educationLevel: ParticipantEducationLevel;
+      undergraduateCourse?: string;
+      sex: ParticipantSex;
+    }
+  ): void {
     const trimmedName = name.trim();
     const trimmedEmail = email?.trim();
+    const trimmedProfession = demographics.profession.trim();
+    const trimmedUndergraduateCourse = demographics.undergraduateCourse?.trim();
 
     this.updateSession((session) => ({
       ...session,
       name: trimmedName,
       email: trimmedEmail ? trimmedEmail : undefined,
+      ageRange: demographics.ageRange,
+      profession: trimmedProfession,
+      educationLevel: demographics.educationLevel,
+      undergraduateCourse: trimmedUndergraduateCourse ? trimmedUndergraduateCourse : undefined,
+      sex: demographics.sex,
     }));
   }
 
