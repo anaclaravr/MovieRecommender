@@ -294,4 +294,83 @@
       </div>
     }
   </aside>
+
+  @if (isFinishModalOpen()) {
+    <div
+      class="finish-modal-backdrop"
+      role="presentation"
+      aria-hidden="true"
+      (click)="closeFinishModal()"
+    ></div>
+
+    <section
+      class="finish-modal glass-surface"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="finish-modal-title"
+      aria-describedby="finish-modal-description"
+    >
+      <div class="finish-modal__header">
+        <span class="finish-modal__icon" aria-hidden="true">
+          <i class="pi pi-check-circle"></i>
+        </span>
+
+        <div>
+          <h2 id="finish-modal-title">Confirmar filmes selecionados</h2>
+          <p id="finish-modal-description">
+            Confira os filmes marcados como assistiria antes de seguir para o questionário.
+          </p>
+        </div>
+      </div>
+
+      @if (selectedRecommendationCards().length) {
+        <div class="finish-modal__movie-list" aria-label="Filmes selecionados">
+          @for (card of selectedRecommendationCards(); track card.movie.id) {
+            <article class="finish-modal__movie">
+              <div
+                class="finish-modal__poster"
+                [style.--poster-gradient]="card.posterGradient"
+                [style.--poster-image]="card.posterImage"
+              >
+                <span>{{ card.movie.year }}</span>
+              </div>
+
+              <div class="finish-modal__movie-meta">
+                <h3>{{ card.movie.title }}</h3>
+                <p>{{ card.genresLabel }}</p>
+              </div>
+            </article>
+          }
+        </div>
+      } @else {
+        <p class="finish-modal__empty">
+          Nenhum filme foi marcado como assistiria.
+        </p>
+      }
+
+      <div class="finish-modal__actions">
+        <button
+          class="glass-button glass-button--light finish-modal__back-button"
+          type="button"
+          (click)="closeFinishModal()"
+        >
+          <span class="glass-button__icon" aria-hidden="true">
+            <i class="pi pi-arrow-left"></i>
+          </span>
+          <span class="glass-button__content">Voltar</span>
+        </button>
+
+        <button
+          class="glass-button glass-button--light glass-button--cta finish-modal__finish-button"
+          type="button"
+          (click)="confirmFinishRecommendations()"
+        >
+          <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
+            <i class="pi pi-check"></i>
+          </span>
+          <span class="glass-button__content">Finalizar</span>
+        </button>
+      </div>
+    </section>
+  }
 </section>

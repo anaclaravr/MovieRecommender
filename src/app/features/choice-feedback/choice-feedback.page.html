@@ -1,0 +1,103 @@
+<section class="choice-feedback-page">
+  <div
+    class="choice-feedback-page__ambient choice-feedback-page__ambient--primary"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="choice-feedback-page__ambient choice-feedback-page__ambient--secondary"
+    aria-hidden="true"
+  ></div>
+
+  <main class="choice-feedback-page__frame">
+    <div class="flow-nav">
+      <nav class="flow-breadcrumb" aria-label="Caminho">
+        <ol>
+          <li>
+            <button class="flow-breadcrumb__link" type="button" (click)="goToParticipantEntry()">
+              Entrada
+            </button>
+          </li>
+          <li>
+            <button class="flow-breadcrumb__link" type="button" (click)="goToMovieSelection()">
+              Seleção de filmes
+            </button>
+          </li>
+          <li>
+            <button class="flow-breadcrumb__link" type="button" (click)="goToRecommendations()">
+              Recomendações
+            </button>
+          </li>
+          <li aria-current="page">Questionário final</li>
+        </ol>
+      </nav>
+
+      <div class="flow-nav__controls">
+        <button class="flow-back-button" type="button" (click)="goToRecommendations()">
+          <i class="pi pi-arrow-left" aria-hidden="true"></i>
+          <span>Voltar</span>
+        </button>
+      </div>
+    </div>
+
+    <header class="choice-feedback-hero">
+      <div class="choice-feedback-hero__copy">
+        <span class="choice-feedback-hero__kicker">Etapa final</span>
+        <h1>Questionário final</h1>
+        <p>
+          Responda às perguntas abaixo e nos ajude a entender sua opinião sobre os filmes
+          recomendados.
+        </p>
+      </div>
+
+      <div class="choice-feedback-hero__status glass-surface" aria-label="Status do questionário">
+        <i class="pi pi-list-check" aria-hidden="true"></i>
+        <div>
+          <strong>10 perguntas</strong>
+          <span>Escala de satisfação de 1 a 5</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="questionnaire-section" aria-label="Perguntas do questionário">
+      @for (question of questions; track question.id) {
+        <article class="question-card glass-surface">
+          <div class="question-card__heading">
+            <span class="question-card__number">{{ question.id }}</span>
+            <h2>{{ question.text }}</h2>
+          </div>
+
+          <div class="likert-scale" role="radiogroup" [attr.aria-label]="'Pergunta ' + question.id">
+            @for (option of likertOptions; track option.value) {
+              <button
+                class="likert-option"
+                type="button"
+                role="radio"
+                [class.is-selected]="isAnswerSelected(question.id, option.value)"
+                [attr.aria-checked]="isAnswerSelected(question.id, option.value)"
+                [attr.aria-label]="option.value + ' - ' + option.label"
+                (click)="selectAnswer(question.id, option.value)"
+              >
+                <span class="likert-option__circle">{{ option.value }}</span>
+                <span class="likert-option__label">{{ option.label }}</span>
+              </button>
+            }
+          </div>
+        </article>
+      }
+    </section>
+
+    <div class="questionnaire-actions">
+      <button
+        class="glass-button glass-button--light glass-button--cta questionnaire-actions__submit"
+        type="button"
+        [disabled]="!canSubmit()"
+        (click)="submitQuestionnaire()"
+      >
+        <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
+          <i class="pi pi-send"></i>
+        </span>
+        <span class="glass-button__content">Enviar</span>
+      </button>
+    </div>
+  </main>
+</section>

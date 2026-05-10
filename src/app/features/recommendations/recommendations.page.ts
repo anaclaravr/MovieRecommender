@@ -163,6 +163,7 @@ export class RecommendationsPage {
   readonly session = this.participantSessionService.session;
   readonly expandedMovieId = signal<string | null>(null);
   readonly wouldWatchMovieIds = signal<Set<string>>(new Set());
+  readonly isFinishModalOpen = signal(false);
   readonly recommendationPageIndex = signal(0);
   readonly recommendationsPageSize = signal(RECOMMENDATIONS_PAGE_SIZE);
   readonly selectedSeedMovieIds = computed(() => this.session().selectedSeedMovieIds.slice(0, 5));
@@ -215,10 +216,20 @@ export class RecommendationsPage {
 
     return this.recommendationCards().find((card) => card.movie.id === expandedMovieId) ?? null;
   });
+  readonly selectedRecommendationCards = computed(() => {
+    const selectedMovieIds = this.wouldWatchMovieIds();
+
+    return this.recommendationCards().filter((card) => selectedMovieIds.has(card.movie.id));
+  });
   readonly wouldWatchCount = computed(() => this.wouldWatchMovieIds().size);
 
   @HostListener('document:keydown.escape')
   handleEscapeKey(): void {
+    if (this.isFinishModalOpen()) {
+      this.closeFinishModal();
+      return;
+    }
+
     this.closeDetails();
   }
 
@@ -256,7 +267,16 @@ export class RecommendationsPage {
   }
 
   finishRecommendations(): void {
-    void this.router.navigateByUrl('/participant-entry');
+    this.closeDetails();
+    this.isFinishModalOpen.set(true);
+  }
+
+  closeFinishModal(): void {
+    this.isFinishModalOpen.set(false);
+  }
+
+  confirmFinishRecommendations(): void {
+    void this.router.navigateByUrl('/choice-feedback');
   }
 
   goToRecommendationPage(pageIndex: number): void {
