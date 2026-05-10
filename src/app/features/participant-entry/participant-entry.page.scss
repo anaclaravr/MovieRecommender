@@ -15,11 +15,13 @@
   gap: var(--space-2);
 }
 
-.field span {
+.field span,
+.field legend {
   font-weight: 600;
 }
 
-.field input {
+.field input[type='text'],
+.field input[type='email'] {
   width: 100%;
   padding: 0.95rem 1rem;
   border: 1px solid var(--color-border);
@@ -29,10 +31,57 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
-.field input:focus {
+.field input[type='text']:focus,
+.field input[type='email']:focus {
   outline: none;
   border-color: rgba(15, 76, 92, 0.35);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.6),
     0 0 0 4px rgba(15, 76, 92, 0.08);
+}
+
+.option-group {
+  padding: 0;
+  border: 0;
+}
+
+.option-group legend {
+  padding: 0;
+}
+
+.option-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr));
+  gap: var(--space-3);
+}
+
+.option-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
+}
+
+.check-option {
+  display: flex;
+  min-height: 3rem;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  background: rgba(255, 255, 255, 0.62);
+  color: var(--color-text);
+}
+
+.check-option input {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--color-primary);
+}
+
+.check-option span {
+  font-weight: 500;
+}
+
+.nested-field {
+  padding-left: var(--space-4);
+  border-left: 3px solid rgba(15, 76, 92, 0.25);
 }

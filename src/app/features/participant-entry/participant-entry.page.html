@@ -1,10 +1,10 @@
 <section class="page-shell">
   <div class="page-panel glass-surface">
     <span class="page-kicker">Step 1 of 4</span>
-    <h1>Participant entry</h1>
+    <h1>Dados do participante</h1>
     <p class="lead">
-      Capture the participant identity first so the later recommendation flow can
-      stay attached to a single mocked session.
+      Essas informacoes ajudam a contextualizar seu perfil de participante no
+      estudo do TCC sobre recomendacao de filmes.
     </p>
 
     <form class="entry-form" (ngSubmit)="submit()">
@@ -29,8 +29,83 @@
         />
       </label>
 
+      <fieldset class="field option-group">
+        <legend>Idade *</legend>
+        <div class="option-grid">
+          @for (option of ageRangeOptions; track option.value) {
+            <label class="check-option">
+              <input
+                type="checkbox"
+                name="ageRange"
+                [checked]="ageRange === option.value"
+                (change)="selectAgeRange(option.value)"
+              />
+              <span>{{ option.label }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      <label class="field">
+        <span>Profissao *</span>
+        <input
+          type="text"
+          name="profession"
+          [(ngModel)]="profession"
+          placeholder="Informe sua profissão"
+          required
+        />
+      </label>
+
+      <fieldset class="field option-group">
+        <legend>Nivel escolar *</legend>
+        <div class="option-grid">
+          @for (option of educationLevelOptions; track option.value) {
+            <label class="check-option">
+              <input
+                type="checkbox"
+                name="educationLevel"
+                [checked]="educationLevel === option.value"
+                (change)="selectEducationLevel(option.value)"
+              />
+              <span>{{ option.label }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
+      @if (requiresUndergraduateCourse) {
+        <label class="field nested-field">
+          <span>Curso de graduacao *</span>
+          <input
+            type="text"
+            name="undergraduateCourse"
+            [(ngModel)]="undergraduateCourse"
+            placeholder="Informe o curso"
+            required
+          />
+        </label>
+      }
+
+      <fieldset class="field option-group">
+        <legend>Sexo *</legend>
+        <div class="option-grid option-grid--compact">
+          @for (option of sexOptions; track option.value) {
+            <label class="check-option">
+              <input
+                type="checkbox"
+                name="sex"
+                [checked]="sex === option.value"
+                (change)="selectSex(option.value)"
+              />
+              <span>{{ option.label }}</span>
+            </label>
+          }
+        </div>
+      </fieldset>
+
       <p class="helper-text">
-        The continue action stays disabled until the participant name is filled.
+        O botao continuar fica desabilitado ate todos os campos obrigatorios serem preenchidos.
       </p>
 
       <div class="page-actions">
