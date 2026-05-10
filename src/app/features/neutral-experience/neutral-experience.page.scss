@@ -1,0 +1,84 @@
+@use '../movie-selection/movie-selection.page.scss';
+
+.neutral-experience-page {
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.94), transparent 24rem),
+    radial-gradient(circle at 12% 18%, rgba(126, 173, 197, 0.1), transparent 19rem),
+    linear-gradient(180deg, #fbfcfc 0%, #f4f7f8 100%);
+}
+
+.neutral-experience-page__controls {
+  justify-content: flex-end;
+}
+
+.neutral-experience-page .movie-selection-preview__title-block {
+  width: min(100%, 42rem);
+  display: grid;
+  gap: 0.55rem;
+}
+
+.neutral-experience-page .movie-selection-preview__title-block p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.neutral-experience-page .chip-row__track {
+  justify-content: center;
+}
+
+.neutral-experience-page .poster-card-shell__details-facts {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.neutral-experience-page .poster-card-shell__details-genres {
+  color: var(--color-text);
+}
+
+.neutral-experience-page .poster-card-shell__art-copy {
+  justify-items: center;
+}
+
+.neutral-experience-page__watch-button {
+  --glass-button-height: 2.25rem;
+  --glass-button-padding-block: 0.42rem;
+  --glass-button-padding-inline: 0.82rem;
+  --glass-button-gap: 0.35rem;
+  --glass-button-font-size: 0.76rem;
+  --glass-button-font-weight: var(--font-weight-semibold);
+  margin-top: 0.7rem;
+  justify-self: start;
+  color: #33414a;
+}
+
+.neutral-experience-page__watch-button.is-selected {
+  --glass-button-background: rgba(229, 237, 240, 0.92);
+  --glass-button-background-hover: rgba(218, 228, 233, 0.94);
+  --glass-button-border: rgba(73, 99, 112, 0.24);
+  --glass-button-color: #26323a;
+}
+
+.neutral-experience-page__watch-button--poster {
+  margin-top: 0;
+  justify-self: center;
+}
+
+.neutral-experience-page__watch-button--expanded-poster {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 2;
+  margin-top: 0;
+  justify-self: auto;
+}
+
+.neutral-experience-page__drawer-empty {
+  margin: 0;
+  padding: 0.75rem 0.2rem;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 720px) {
+  .neutral-experience-page .poster-card-shell__details-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

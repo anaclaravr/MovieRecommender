@@ -1,4 +1,7 @@
-<section class="page-shell movie-selection-preview" [class.is-drawer-open]="isDrawerOpen()">
+<section
+  class="page-shell movie-selection-preview neutral-experience-page"
+  [class.is-drawer-open]="isDrawerOpen()"
+>
   <div class="movie-selection-preview__frame" [class.is-drawer-open]="isDrawerOpen()">
     <div class="flow-nav">
       <nav class="flow-breadcrumb" aria-label="Caminho">
@@ -9,7 +12,7 @@
             </button>
           </li>
           <li>
-            <button class="flow-breadcrumb__link" type="button" (click)="goToPreviousStep()">
+            <button class="flow-breadcrumb__link" type="button" (click)="goToInstructions()">
               Instruções
             </button>
           </li>
@@ -17,21 +20,9 @@
         </ol>
       </nav>
 
-      <div class="flow-nav__controls movie-selection-preview__controls">
-        <div class="selection-meter" aria-label="Contador de selecao">
-          @for (step of selectionSteps; track step) {
-            <div class="selection-step" [class.is-complete]="step <= selectedCount()">
-              @if (step <= selectedCount()) {
-                <i class="pi pi-check selection-step__icon" aria-hidden="true"></i>
-              } @else {
-                <span>{{ step }}</span>
-              }
-            </div>
-          }
-        </div>
-
+      <div class="flow-nav__controls movie-selection-preview__controls neutral-experience-page__controls">
         <div class="movie-selection-preview__actions">
-          <button class="flow-back-button" type="button" (click)="goToPreviousStep()">
+          <button class="flow-back-button" type="button" (click)="goToInstructions()">
             <i class="pi pi-arrow-left" aria-hidden="true"></i>
             <span>Voltar</span>
           </button>
@@ -39,12 +30,12 @@
           <button
             class="glass-button glass-button--light glass-button--cta movie-selection-preview__continue-button"
             type="button"
-            (click)="continueToLoading()"
+            (click)="finishExperience()"
           >
             <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
-              <i class="pi pi-arrow-right"></i>
+              <i class="pi pi-check"></i>
             </span>
-            <span class="glass-button__content">Continuar</span>
+            <span class="glass-button__content">Finalizar</span>
           </button>
         </div>
       </div>
@@ -52,11 +43,11 @@
 
     <header class="movie-selection-preview__header">
       <div class="movie-selection-preview__topbar">
-        <label class="search-shell glass-surface" aria-label="Buscar um filme">
+        <label class="search-shell glass-surface" aria-label="Buscar filme por título">
           <i class="pi pi-search search-shell__icon" aria-hidden="true"></i>
           <input
             type="search"
-            placeholder="Buscar um filme"
+            placeholder="Buscar filme"
             [value]="searchQuery()"
             (input)="updateSearchQuery(($any($event.target).value ?? '').toString())"
           />
@@ -64,7 +55,8 @@
       </div>
 
       <div class="movie-selection-preview__title-block">
-        <h1>Selecione 5 filmes que você ama para entendermos seu gosto.</h1>
+        <h1>Catálogo de filmes</h1>
+        <p>Explore os títulos disponíveis e marque os filmes que você consideraria assistir.</p>
       </div>
 
       <div
@@ -81,7 +73,7 @@
           <button
             class="chip-row__edge-button chip-row__edge-button--left"
             type="button"
-            aria-label="Ver generos anteriores"
+            aria-label="Ver gêneros anteriores"
             (click)="scrollGenres('left')"
           >
             <i class="pi pi-chevron-left" aria-hidden="true"></i>
@@ -91,7 +83,7 @@
         <div
           #genreScroller
           class="chip-row__viewport"
-          aria-label="Filtro por genero"
+          aria-label="Filtro por gênero"
           (scroll)="updateGenreScrollState()"
           (pointerdown)="startGenreScrollDrag($event)"
           (pointermove)="moveGenreScrollDrag($event)"
@@ -117,7 +109,7 @@
           <button
             class="chip-row__edge-button chip-row__edge-button--right"
             type="button"
-            aria-label="Ver mais generos"
+            aria-label="Ver mais gêneros"
             (click)="scrollGenres('right')"
           >
             <i class="pi pi-chevron-right" aria-hidden="true"></i>
@@ -125,49 +117,6 @@
         }
       </div>
     </header>
-
-    @if (showContinueRequirementAlert()) {
-      <aside
-        class="app-alert app-alert--warning movie-selection-preview__requirement-alert"
-        role="alert"
-      >
-        <i class="pi pi-exclamation-circle app-alert__icon" aria-hidden="true"></i>
-
-        <div class="app-alert__copy">
-          <strong>Selecione 5 filmes</strong>
-          <p>{{ continueRequirementMessage() }}</p>
-        </div>
-
-        <button
-          class="app-alert__dismiss"
-          type="button"
-          aria-label="Dispensar mensagem"
-          (click)="dismissContinueRequirementAlert()"
-        >
-          <i class="pi pi-times" aria-hidden="true"></i>
-        </button>
-      </aside>
-    }
-
-    @if (showSelectionLimitHint()) {
-      <aside class="app-alert app-alert--info movie-selection-preview__limit-hint" role="alert">
-        <i class="pi pi-info-circle app-alert__icon" aria-hidden="true"></i>
-
-        <div class="app-alert__copy">
-          <strong>Limite atingido</strong>
-          <p>{{ selectionLimitHint }}</p>
-        </div>
-
-        <button
-          class="app-alert__dismiss"
-          type="button"
-          aria-label="Dispensar mensagem"
-          (click)="dismissSelectionLimitHint()"
-        >
-          <i class="pi pi-times" aria-hidden="true"></i>
-        </button>
-      </aside>
-    }
 
     <div class="movie-selection-preview__content">
       <div class="movie-selection-preview__main">
@@ -184,12 +133,15 @@
                 tabindex="0"
                 role="button"
                 [class.is-selected]="isMovieSelected(card.movie.id)"
-                [class.is-selection-blocked]="isSelectionBlocked(card.movie.id)"
                 [class.is-details-expanded]="isDetailsExpanded(card.movie.id)"
                 [style.order]="movieCardOrder(card.movie.id)"
                 [attr.aria-pressed]="isMovieSelected(card.movie.id)"
-                [attr.aria-disabled]="isSelectionBlocked(card.movie.id)"
-                (click)="toggleMovieSelection(card.movie.id, $event)"
+                [attr.aria-label]="
+                  (isMovieSelected(card.movie.id) ? 'Remover ' : 'Marcar ') +
+                  card.movie.title +
+                  ' como assistiria'
+                "
+                (click)="toggleWouldWatch(card.movie.id, $event)"
                 (keydown)="onCardKeydown($event, card.movie.id)"
               >
                 <div
@@ -198,14 +150,8 @@
                   [style.--poster-image]="card.posterImage"
                 >
                   <button
-                    class="glass-button glass-button--compact poster-card-shell__details-pill"
+                    class="glass-button glass-button--compact poster-card-shell__details-pill poster-card-shell__details-pill--on-dark"
                     type="button"
-                    [class.poster-card-shell__details-pill--on-light]="
-                      card.detailsContrast === 'light'
-                    "
-                    [class.poster-card-shell__details-pill--on-dark]="
-                      card.detailsContrast === 'dark'
-                    "
                     (click)="toggleMovieDetails(card.movie.id, $event)"
                   >
                     <span class="glass-button__icon glass-button__icon--compact" aria-hidden="true">
@@ -216,10 +162,24 @@
                     </span>
                   </button>
 
-                  @if (isMovieSelected(card.movie.id)) {
-                    <span class="poster-card-shell__selected-badge" aria-hidden="true">
-                      <i class="pi pi-check"></i>
-                    </span>
+                  @if (isDetailsExpanded(card.movie.id)) {
+                    <button
+                      class="glass-button glass-button--light glass-button--compact neutral-experience-page__watch-button neutral-experience-page__watch-button--expanded-poster"
+                      type="button"
+                      [class.is-selected]="isMovieSelected(card.movie.id)"
+                      [attr.aria-pressed]="isMovieSelected(card.movie.id)"
+                      [attr.aria-label]="
+                        (isMovieSelected(card.movie.id) ? 'Remover ' : 'Marcar ') +
+                        card.movie.title +
+                        ' como assistiria'
+                      "
+                      (click)="toggleWouldWatch(card.movie.id, $event)"
+                    >
+                      <span class="glass-button__icon glass-button__icon--compact" aria-hidden="true">
+                        <i [class]="isMovieSelected(card.movie.id) ? 'pi pi-check' : 'pi pi-eye'"></i>
+                      </span>
+                      <span class="glass-button__content">Assistiria</span>
+                    </button>
                   }
 
                   @if (isDetailsExpanded(card.movie.id)) {
@@ -230,8 +190,28 @@
                     </div>
                   } @else {
                     <div class="poster-card-shell__art-copy">
-                      <span class="poster-card-shell__poster-year">{{ card.movie.year }}</span>
-                      <span class="poster-card-shell__poster-title">{{ card.movie.title }}</span>
+                      <button
+                        class="glass-button glass-button--light glass-button--compact neutral-experience-page__watch-button neutral-experience-page__watch-button--poster"
+                        type="button"
+                        [class.is-selected]="isMovieSelected(card.movie.id)"
+                        [attr.aria-pressed]="isMovieSelected(card.movie.id)"
+                        [attr.aria-label]="
+                          (isMovieSelected(card.movie.id) ? 'Remover ' : 'Marcar ') +
+                          card.movie.title +
+                          ' como assistiria'
+                        "
+                        (click)="toggleWouldWatch(card.movie.id, $event)"
+                      >
+                        <span
+                          class="glass-button__icon glass-button__icon--compact"
+                          aria-hidden="true"
+                        >
+                          <i
+                            [class]="isMovieSelected(card.movie.id) ? 'pi pi-check' : 'pi pi-eye'"
+                          ></i>
+                        </span>
+                        <span class="glass-button__content">Assistiria</span>
+                      </button>
                     </div>
                   }
                 </div>
@@ -263,7 +243,7 @@
                       </div>
 
                       <div class="poster-card-shell__details-fact">
-                        <span class="text-overline">Generos</span>
+                        <span class="text-overline">Gêneros</span>
                         <p class="poster-card-shell__details-genres">{{ card.genresLabel }}</p>
                       </div>
                     </div>
@@ -325,7 +305,7 @@
       <button
         class="selection-drawer-trigger glass-button glass-button--light"
         type="button"
-        aria-label="Abrir filmes selecionados"
+        aria-label="Abrir filmes marcados"
         (click)="openDrawer()"
       >
         <i class="pi pi-list selection-drawer-trigger__icon" aria-hidden="true"></i>
@@ -338,8 +318,8 @@
       <aside class="selection-drawer glass-surface" [class.is-open]="isDrawerOpen()">
         <div class="selection-drawer__header">
           <div>
-            <h2>Filmes selecionados</h2>
-            <p>{{ selectedCount() }} de {{ maxSelectedMovies }} filmes escolhidos ate agora.</p>
+            <h2>Filmes marcados</h2>
+            <p>Itens que você marcou como assistiria.</p>
           </div>
           <button
             class="selection-drawer__close"
@@ -352,31 +332,35 @@
         </div>
 
         <div class="selection-drawer__list">
-          @for (card of selectedCards(); track card.movie.id) {
-            <article class="selection-drawer__item glass-surface">
-              <div
-                class="selection-drawer__poster"
-                [style.--poster-gradient]="card.posterGradient"
-                [style.--poster-image]="card.posterImage"
-              >
-                <span>{{ card.movie.title }}</span>
-              </div>
+          @if (selectedCards().length) {
+            @for (card of selectedCards(); track card.movie.id) {
+              <article class="selection-drawer__item glass-surface">
+                <div
+                  class="selection-drawer__poster"
+                  [style.--poster-gradient]="card.posterGradient"
+                  [style.--poster-image]="card.posterImage"
+                >
+                  <span>{{ card.movie.title }}</span>
+                </div>
 
-              <div class="selection-drawer__meta">
-                <span class="text-overline">{{ card.movie.year }}</span>
-                <h3>{{ card.movie.title }}</h3>
-                <p>{{ card.genresLabel }}</p>
-              </div>
+                <div class="selection-drawer__meta">
+                  <span class="text-overline">{{ card.movie.year }} • {{ card.durationLabel }}</span>
+                  <h3>{{ card.movie.title }}</h3>
+                  <p>{{ card.genresLabel }}</p>
+                </div>
 
-              <button
-                class="selection-drawer__remove"
-                type="button"
-                [attr.aria-label]="'Remover ' + card.movie.title + ' da selecao'"
-                (click)="removeSelectedMovie(card.movie.id, $event)"
-              >
-                <i class="pi pi-times" aria-hidden="true"></i>
-              </button>
-            </article>
+                <button
+                  class="selection-drawer__remove"
+                  type="button"
+                  [attr.aria-label]="'Remover ' + card.movie.title + ' dos filmes marcados'"
+                  (click)="removeSelectedMovie(card.movie.id, $event)"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              </article>
+            }
+          } @else {
+            <p class="neutral-experience-page__drawer-empty">Nenhum filme marcado.</p>
           }
         </div>
       </aside>

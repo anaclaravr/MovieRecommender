@@ -296,50 +296,6 @@ select {
   box-shadow: var(--state-focus-ring);
 }
 
-.instructions-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  display: grid;
-  place-items: center;
-  padding: var(--flow-page-inline);
-  background: rgba(34, 40, 45, 0.42);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-}
-
-.instructions-modal {
-  width: min(100%, 34rem);
-  padding: 2rem;
-  display: grid;
-  gap: 1rem;
-  border-radius: var(--radius-3);
-}
-
-.instructions-modal h2 {
-  margin: 0;
-  color: var(--color-text);
-  font-size: 1.55rem;
-  font-weight: var(--font-weight-semibold);
-  line-height: 1.2;
-}
-
-.instructions-modal p {
-  margin: 0;
-  color: var(--color-text-muted);
-  font-size: var(--font-size-body);
-  line-height: var(--line-height-body);
-}
-
-.instructions-modal__button {
-  justify-self: end;
-  margin-top: 0.5rem;
-  --glass-button-height: 3rem;
-  --glass-button-padding-block: 0.68rem;
-  --glass-button-padding-inline: 1.05rem;
-  --glass-button-font-size: 0.95rem;
-}
-
 .glass-button {
   position: relative;
   isolation: isolate;

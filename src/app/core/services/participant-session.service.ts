@@ -1,54 +1,122 @@
 import { Injectable, signal } from '@angular/core';
 
 import {
-  AppVariant,
+  ExperimentVariant,
   ParticipantAgeRange,
   ParticipantEducationLevel,
+  ParticipantGender,
   ParticipantSession,
-  ParticipantSex,
 } from '../models/participant-session';
 
 const SESSION_STORAGE_KEY = 'movie-recommender-participant-session';
-const AGE_RANGES: ParticipantAgeRange[] = ['18-24', '25-30', '31-36', '37-42', '43-48', '49-54', '55-60'];
-const EDUCATION_LEVELS: ParticipantEducationLevel[] = [
-  'high-school',
-  'technical',
-  'undergraduate-student',
-  'undergraduate-complete',
-  'postgraduate',
-  'masters',
-  'doctorate',
+const AGE_RANGES: ParticipantAgeRange[] = [
+  '18-24',
+  '25-30',
+  '31-36',
+  '37-42',
+  '43-48',
+  '49-54',
+  '55-60',
+  'prefer-not-answer',
 ];
-const SEX_OPTIONS: ParticipantSex[] = ['female', 'male'];
+const EDUCATION_LEVELS: ParticipantEducationLevel[] = [
+  'elementary-incomplete',
+  'elementary-complete',
+  'high-school-incomplete',
+  'high-school-complete',
+  'higher-education-in-progress',
+  'higher-education-complete',
+  'postgraduate-in-progress',
+  'postgraduate-complete',
+  'prefer-not-answer',
+];
+const GENDER_OPTIONS: ParticipantGender[] = [
+  'female',
+  'male',
+  'non-binary',
+  'other',
+  'prefer-not-answer',
+];
+const EXPERIMENT_VARIANTS: ExperimentVariant[] = ['mediated', 'neutral'];
+
+type StoredParticipantSession = Partial<ParticipantSession> & {
+  variant?: ExperimentVariant;
+};
+
+function createTrackingId(prefix: string): string {
+  const randomValue =
+    typeof globalThis.crypto?.randomUUID === 'function'
+      ? globalThis.crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return `${prefix}-${randomValue}`;
+}
 
 function createInitialSession(): ParticipantSession {
   return {
+    sessionId: createTrackingId('session'),
+    participantId: createTrackingId('participant'),
     name: '',
     email: undefined,
     selectedSeedMovieIds: [],
-    variant: 'neutral',
+    selectedNeutralMovieIds: [],
+    experimentVariant: 'mediated',
   };
 }
 
-function isParticipantSession(value: unknown): value is ParticipantSession {
+function isExperimentVariant(value: unknown): value is ExperimentVariant {
+  return typeof value === 'string' && EXPERIMENT_VARIANTS.includes(value as ExperimentVariant);
+}
+
+function normalizeParticipantSession(value: unknown): ParticipantSession | null {
   if (!value || typeof value !== 'object') {
-    return false;
+    return null;
   }
 
-  const session = value as Partial<ParticipantSession>;
+  const session = value as StoredParticipantSession;
+  const experimentVariant = session.experimentVariant ?? session.variant;
 
-  return (
-    typeof session.name === 'string' &&
-    Array.isArray(session.selectedSeedMovieIds) &&
-    session.selectedSeedMovieIds.every((id) => typeof id === 'string') &&
-    (session.email === undefined || typeof session.email === 'string') &&
-    (session.ageRange === undefined || AGE_RANGES.includes(session.ageRange)) &&
-    (session.profession === undefined || typeof session.profession === 'string') &&
-    (session.educationLevel === undefined || EDUCATION_LEVELS.includes(session.educationLevel)) &&
-    (session.undergraduateCourse === undefined || typeof session.undergraduateCourse === 'string') &&
-    (session.sex === undefined || SEX_OPTIONS.includes(session.sex)) &&
-    (session.variant === 'mediated' || session.variant === 'neutral')
-  );
+  if (
+    typeof session.name !== 'string' ||
+    !Array.isArray(session.selectedSeedMovieIds) ||
+    !session.selectedSeedMovieIds.every((id) => typeof id === 'string') ||
+    (session.selectedNeutralMovieIds !== undefined &&
+      (!Array.isArray(session.selectedNeutralMovieIds) ||
+        !session.selectedNeutralMovieIds.every((id) => typeof id === 'string'))) ||
+    (session.email !== undefined && typeof session.email !== 'string') ||
+    (session.ageRange !== undefined && !AGE_RANGES.includes(session.ageRange)) ||
+    (session.profession !== undefined && typeof session.profession !== 'string') ||
+    (session.educationLevel !== undefined &&
+      !EDUCATION_LEVELS.includes(session.educationLevel)) ||
+    (session.academicCourse !== undefined && typeof session.academicCourse !== 'string') ||
+    (session.gender !== undefined && !GENDER_OPTIONS.includes(session.gender)) ||
+    (session.genderDetail !== undefined && typeof session.genderDetail !== 'string') ||
+    !isExperimentVariant(experimentVariant)
+  ) {
+    return null;
+  }
+
+  return {
+    sessionId:
+      typeof session.sessionId === 'string' && session.sessionId.trim().length > 0
+        ? session.sessionId
+        : createTrackingId('session'),
+    participantId:
+      typeof session.participantId === 'string' && session.participantId.trim().length > 0
+        ? session.participantId
+        : createTrackingId('participant'),
+    name: session.name,
+    email: session.email,
+    ageRange: session.ageRange,
+    profession: session.profession,
+    educationLevel: session.educationLevel,
+    academicCourse: session.academicCourse,
+    gender: session.gender,
+    genderDetail: session.genderDetail,
+    selectedSeedMovieIds: [...session.selectedSeedMovieIds],
+    selectedNeutralMovieIds: [...(session.selectedNeutralMovieIds ?? [])],
+    experimentVariant,
+  };
 }
 
 function readStoredSession(): ParticipantSession {
@@ -65,7 +133,7 @@ function readStoredSession(): ParticipantSession {
 
     const parsedSession = JSON.parse(storedSession);
 
-    return isParticipantSession(parsedSession) ? parsedSession : createInitialSession();
+    return normalizeParticipantSession(parsedSession) ?? createInitialSession();
   } catch {
     return createInitialSession();
   }
@@ -90,26 +158,29 @@ export class ParticipantSessionService {
     email: string | undefined,
     demographics: {
       ageRange: ParticipantAgeRange;
-      profession: string;
+      profession?: string;
       educationLevel: ParticipantEducationLevel;
-      undergraduateCourse?: string;
-      sex: ParticipantSex;
-    }
+      academicCourse?: string;
+      gender: ParticipantGender;
+      genderDetail?: string;
+    },
   ): void {
     const trimmedName = name.trim();
     const trimmedEmail = email?.trim();
-    const trimmedProfession = demographics.profession.trim();
-    const trimmedUndergraduateCourse = demographics.undergraduateCourse?.trim();
+    const trimmedProfession = demographics.profession?.trim();
+    const trimmedAcademicCourse = demographics.academicCourse?.trim();
+    const trimmedGenderDetail = demographics.genderDetail?.trim();
 
     this.updateSession((session) => ({
       ...session,
       name: trimmedName,
       email: trimmedEmail ? trimmedEmail : undefined,
       ageRange: demographics.ageRange,
-      profession: trimmedProfession,
+      profession: trimmedProfession ? trimmedProfession : undefined,
       educationLevel: demographics.educationLevel,
-      undergraduateCourse: trimmedUndergraduateCourse ? trimmedUndergraduateCourse : undefined,
-      sex: demographics.sex,
+      academicCourse: trimmedAcademicCourse ? trimmedAcademicCourse : undefined,
+      gender: demographics.gender,
+      genderDetail: trimmedGenderDetail ? trimmedGenderDetail : undefined,
     }));
   }
 
@@ -120,11 +191,22 @@ export class ParticipantSessionService {
     }));
   }
 
-  setVariant(variant: AppVariant): void {
+  setSelectedNeutralMovieIds(ids: string[]): void {
     this.updateSession((session) => ({
       ...session,
-      variant,
+      selectedNeutralMovieIds: Array.from(new Set(ids)),
     }));
+  }
+
+  setExperimentVariant(experimentVariant: ExperimentVariant): void {
+    this.updateSession((session) => ({
+      ...session,
+      experimentVariant,
+    }));
+  }
+
+  setVariant(variant: ExperimentVariant): void {
+    this.setExperimentVariant(variant);
   }
 
   reset(): void {

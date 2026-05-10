@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   HostListener,
+  OnInit,
   computed,
   inject,
   signal,
@@ -9,7 +10,13 @@ import {
 import { Router } from '@angular/router';
 
 import { MOCK_MOVIES } from '../../core/mock-data/movies.mock';
+import {
+  PersuasiveStimulusType,
+  SelectedStimulusSummary,
+  createEmptySelectedStimulusSummary,
+} from '../../core/models/experience-tracking';
 import { Movie } from '../../core/models/movie';
+import { ExperienceTrackingService } from '../../core/services/experience-tracking.service';
 import { ParticipantSessionService } from '../../core/services/participant-session.service';
 
 interface RecommendationCard {
@@ -23,6 +30,7 @@ interface RecommendationCard {
   rank: number;
   rankLabel: string;
   mediatedCue: string;
+  ratingBadgeLabel: string;
 }
 
 const RECOMMENDATION_LIMIT = 10;
@@ -56,6 +64,7 @@ const TOP_RECOMMENDATION_CUES = [
   'Muito próximo do seu perfil',
   'Boa chance de agradar',
 ] as const;
+const TOP_RATED_BADGE_LABEL = 'Mais bem avaliado';
 const MOVIE_DETAILS: Record<
   string,
   { durationLabel: string; ratingLabel: string; director: string }
@@ -146,7 +155,24 @@ function createRecommendationCard(movie: Movie, index: number): RecommendationCa
     rank,
     rankLabel: rank <= 3 ? `#${rank}` : '',
     mediatedCue: TOP_RECOMMENDATION_CUES[index] ?? '',
+    ratingBadgeLabel: '',
   };
+}
+
+function getRatingValue(card: RecommendationCard): number {
+  return Number.parseFloat(card.ratingLabel.replace(',', '.'));
+}
+
+function addRecommendationBadges(cards: RecommendationCard[]): RecommendationCard[] {
+  const highestRatedCard = cards
+    .slice()
+    .sort((left, right) => getRatingValue(right) - getRatingValue(left))[0];
+
+  return cards.map((card) => ({
+    ...card,
+    ratingBadgeLabel:
+      highestRatedCard && card.movie.id === highestRatedCard.movie.id ? TOP_RATED_BADGE_LABEL : '',
+  }));
 }
 
 @Component({
@@ -155,15 +181,15 @@ function createRecommendationCard(movie: Movie, index: number): RecommendationCa
   styleUrl: './recommendations.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class RecommendationsPage {
+export class RecommendationsPage implements OnInit {
   private readonly participantSessionService = inject(ParticipantSessionService);
+  private readonly experienceTrackingService = inject(ExperienceTrackingService);
   private readonly router = inject(Router);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly session = this.participantSessionService.session;
   readonly expandedMovieId = signal<string | null>(null);
   readonly wouldWatchMovieIds = signal<Set<string>>(new Set());
-  readonly isFinishModalOpen = signal(false);
   readonly recommendationPageIndex = signal(0);
   readonly recommendationsPageSize = signal(RECOMMENDATIONS_PAGE_SIZE);
   readonly selectedSeedMovieIds = computed(() => this.session().selectedSeedMovieIds.slice(0, 5));
@@ -179,9 +205,11 @@ export class RecommendationsPage {
     const nonSelectedMovies = MOCK_MOVIES.filter((movie) => !selectedMovieIds.has(movie.id));
     const fallbackMovies = MOCK_MOVIES.filter((movie) => selectedMovieIds.has(movie.id));
 
-    return [...nonSelectedMovies, ...fallbackMovies]
+    const cards = [...nonSelectedMovies, ...fallbackMovies]
       .slice(0, RECOMMENDATION_LIMIT)
       .map((movie, index) => createRecommendationCard(movie, index));
+
+    return addRecommendationBadges(cards);
   });
   readonly recommendationPageCount = computed(() =>
     Math.max(1, Math.ceil(this.recommendationCards().length / this.recommendationsPageSize())),
@@ -216,25 +244,24 @@ export class RecommendationsPage {
 
     return this.recommendationCards().find((card) => card.movie.id === expandedMovieId) ?? null;
   });
-  readonly selectedRecommendationCards = computed(() => {
-    const selectedMovieIds = this.wouldWatchMovieIds();
-
-    return this.recommendationCards().filter((card) => selectedMovieIds.has(card.movie.id));
-  });
   readonly wouldWatchCount = computed(() => this.wouldWatchMovieIds().size);
+
+  ngOnInit(): void {
+    this.experienceTrackingService.trackExperienceStarted(this.trackingContext());
+  }
 
   @HostListener('document:keydown.escape')
   handleEscapeKey(): void {
-    if (this.isFinishModalOpen()) {
-      this.closeFinishModal();
-      return;
-    }
-
     this.closeDetails();
   }
 
   openDetails(movieId: string): void {
+    if (this.expandedMovieId() === movieId) {
+      return;
+    }
+
     this.expandedMovieId.set(movieId);
+    this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'details_opened');
   }
 
   openDetailsFromCard(movieId: string, event: Event): void {
@@ -254,6 +281,28 @@ export class RecommendationsPage {
     this.openDetails(movieId);
   }
 
+  updateRecommendationTooltipPosition(event: PointerEvent): void {
+    const card = event.currentTarget;
+
+    if (!(card instanceof HTMLElement)) {
+      return;
+    }
+
+    const bounds = card.getBoundingClientRect();
+    const tooltipHalfWidth = 58;
+    const tooltipHeightWithGap = 42;
+    const pointerX = event.clientX - bounds.left;
+    const pointerY = event.clientY - bounds.top;
+    const tooltipX = Math.max(
+      tooltipHalfWidth,
+      Math.min(pointerX, bounds.width - tooltipHalfWidth),
+    );
+    const tooltipY = Math.max(tooltipHeightWithGap, pointerY);
+
+    card.style.setProperty('--tooltip-x', `${tooltipX}px`);
+    card.style.setProperty('--tooltip-y', `${tooltipY}px`);
+  }
+
   closeDetails(): void {
     this.expandedMovieId.set(null);
   }
@@ -267,15 +316,13 @@ export class RecommendationsPage {
   }
 
   finishRecommendations(): void {
+    const selectedMovieIds = Array.from(this.wouldWatchMovieIds());
+
+    this.experienceTrackingService.trackExperienceCompleted(this.trackingContext(), {
+      selectedMovieIds,
+      selectedStimulusSummary: this.selectedStimulusSummary(selectedMovieIds),
+    });
     this.closeDetails();
-    this.isFinishModalOpen.set(true);
-  }
-
-  closeFinishModal(): void {
-    this.isFinishModalOpen.set(false);
-  }
-
-  confirmFinishRecommendations(): void {
     void this.router.navigateByUrl('/choice-feedback');
   }
 
@@ -312,6 +359,11 @@ export class RecommendationsPage {
 
   toggleWouldWatch(movieId: string, event?: Event): void {
     event?.stopPropagation();
+
+    if (!this.wouldWatchMovieIds().has(movieId)) {
+      this.trackMovieSelected(movieId);
+    }
+
     this.wouldWatchMovieIds.update((movieIds) => this.toggleMovieId(movieIds, movieId));
   }
 
@@ -341,6 +393,66 @@ export class RecommendationsPage {
     }
 
     return nextMovieIds;
+  }
+
+  private trackMovieSelected(movieId: string): void {
+    const card = this.recommendationCards().find(
+      (recommendationCard) => recommendationCard.movie.id === movieId,
+    );
+
+    if (!card) {
+      return;
+    }
+
+    this.experienceTrackingService.trackMovieSelected(this.trackingContext(), {
+      movieId: card.movie.id,
+      movieTitle: card.movie.title,
+      persuasiveStimulusType: this.persuasiveStimulusTypeForCard(card),
+    });
+  }
+
+  private selectedStimulusSummary(selectedMovieIds: string[]): SelectedStimulusSummary {
+    const summary = createEmptySelectedStimulusSummary();
+
+    for (const movieId of selectedMovieIds) {
+      const stimulusType = this.persuasiveStimulusTypeForMovie(movieId);
+
+      summary[stimulusType] += 1;
+    }
+
+    return summary;
+  }
+
+  private persuasiveStimulusTypeForMovie(movieId: string): PersuasiveStimulusType {
+    const card = this.recommendationCards().find(
+      (recommendationCard) => recommendationCard.movie.id === movieId,
+    );
+
+    return card ? this.persuasiveStimulusTypeForCard(card) : 'none';
+  }
+
+  private persuasiveStimulusTypeForCard(card: RecommendationCard): PersuasiveStimulusType {
+    if (card.rank === 1) {
+      return 'top_1';
+    }
+
+    if (card.rank === 2) {
+      return 'top_2';
+    }
+
+    if (card.rank === 3) {
+      return 'top_3';
+    }
+
+    if (card.ratingBadgeLabel) {
+      return 'best_rated';
+    }
+
+    return 'recommended_for_you';
+  }
+
+  private trackingContext() {
+    return this.experienceTrackingService.createContext(this.session());
   }
 
   private isInteractiveEventTarget(event: Event): boolean {

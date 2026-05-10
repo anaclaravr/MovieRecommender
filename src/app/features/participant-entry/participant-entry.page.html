@@ -1,118 +1,218 @@
-<section class="page-shell">
-  <div class="page-panel glass-surface">
-    <span class="page-kicker">Etapa 1 de 4</span>
-    <h1>Dados do participante</h1>
-    <p class="lead">
-      Essas informações ajudam a contextualizar seu perfil de participante no
-      estudo do TCC sobre recomendação de filmes.
-    </p>
+<section class="participant-entry-page">
+  <div
+    class="participant-entry-page__ambient participant-entry-page__ambient--primary"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="participant-entry-page__ambient participant-entry-page__ambient--secondary"
+    aria-hidden="true"
+  ></div>
 
-    <form class="entry-form" (ngSubmit)="submit()">
-      <label class="field">
-        <span>Nome *</span>
-        <input
-          type="text"
-          name="name"
-          [(ngModel)]="name"
-          placeholder="Informe seu nome"
-          required
-        />
-      </label>
+  <main class="participant-entry-page__frame">
+    <div class="flow-nav">
+      <nav class="flow-breadcrumb" aria-label="Caminho">
+        <ol>
+          <li aria-current="page">Entrada</li>
+        </ol>
+      </nav>
 
-      <label class="field">
-        <span>Email (opcional)</span>
-        <input
-          type="email"
-          name="email"
-          [(ngModel)]="email"
-          placeholder="name@example.com"
-        />
-      </label>
-
-      <fieldset class="field option-group">
-        <legend>Idade *</legend>
-        <div class="option-grid">
-          @for (option of ageRangeOptions; track option.value) {
-            <label class="check-option">
-              <input
-                type="checkbox"
-                name="ageRange"
-                [checked]="ageRange === option.value"
-                (change)="selectAgeRange(option.value)"
-              />
-              <span>{{ option.label }}</span>
-            </label>
-          }
-        </div>
-      </fieldset>
-
-      <fieldset class="field option-group">
-        <legend>Nível escolar *</legend>
-        <div class="option-grid">
-          @for (option of educationLevelOptions; track option.value) {
-            <label class="check-option">
-              <input
-                type="checkbox"
-                name="educationLevel"
-                [checked]="educationLevel === option.value"
-                (change)="selectEducationLevel(option.value)"
-              />
-              <span>{{ option.label }}</span>
-            </label>
-          }
-        </div>
-      </fieldset>
-
-      @if (requiresUndergraduateCourse) {
-        <label class="field nested-field">
-          <span>Curso de graduação *</span>
-          <input
-            type="text"
-            name="undergraduateCourse"
-            [(ngModel)]="undergraduateCourse"
-            placeholder="Informe o curso"
-            required
-          />
-        </label>
-      }
-
-      <label class="field">
-        <span>Profissão *</span>
-        <input
-          type="text"
-          name="profession"
-          [(ngModel)]="profession"
-          placeholder="Informe sua profissão"
-          required
-        />
-      </label>
-
-      <fieldset class="field option-group">
-        <legend>Sexo *</legend>
-        <div class="option-grid option-grid--compact">
-          @for (option of sexOptions; track option.value) {
-            <label class="check-option">
-              <input
-                type="checkbox"
-                name="sex"
-                [checked]="sex === option.value"
-                (change)="selectSex(option.value)"
-              />
-              <span>{{ option.label }}</span>
-            </label>
-          }
-        </div>
-      </fieldset>
-
-      <p class="helper-text">
-        O botão continuar fica desabilitado até todos os campos obrigatórios serem preenchidos.
-      </p>
-
-      <div class="page-actions">
-        <button class="action-button" type="submit" [disabled]="!canContinue">
-          Continuar para seleção de filmes
+      <div class="flow-nav__controls participant-entry-page__controls">
+        <button
+          class="glass-button glass-button--light glass-button--cta participant-entry-page__continue-button"
+          type="submit"
+          form="participant-entry-form"
+          [disabled]="!canContinue"
+        >
+          <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
+            <i class="pi pi-arrow-right"></i>
+          </span>
+          <span class="glass-button__content">Continuar</span>
         </button>
       </div>
+    </div>
+
+    <header class="participant-entry-hero">
+      <div class="participant-entry-hero__copy">
+        <h1>Dados do participante</h1>
+        <p>
+          Essas perguntas ajudam a entender o perfil dos participantes. As respostas serão
+          analisadas em conjunto e não identificarão ninguém. Caso prefira, você pode selecionar
+          “Prefiro não responder”.
+        </p>
+      </div>
+
+      <div class="participant-entry-hero__status glass-surface" aria-label="Status do formulário">
+        <i class="pi pi-user-edit" aria-hidden="true"></i>
+        <div>
+          <strong>{{ requiredFieldsCompleted }} de {{ requiredFieldsTotal }}</strong>
+          <span>campos obrigatórios preenchidos</span>
+        </div>
+      </div>
+    </header>
+
+    <form id="participant-entry-form" class="entry-form" (ngSubmit)="submit()">
+      <section class="entry-section" aria-labelledby="personal-info-title">
+        <div class="entry-section__heading">
+          <span class="entry-section__kicker">Identificação</span>
+          <h2 id="personal-info-title">Informações pessoais</h2>
+        </div>
+
+        <div class="field-grid">
+          <label class="field">
+            <span class="field__label">Nome <span aria-hidden="true">*</span></span>
+            <span class="input-shell">
+              <i class="pi pi-user input-shell__icon" aria-hidden="true"></i>
+              <input
+                type="text"
+                name="name"
+                [(ngModel)]="name"
+                placeholder="Informe seu nome"
+                autocomplete="name"
+                required
+              />
+            </span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">
+              Email
+              <small class="optional-chip">Opcional</small>
+            </span>
+            <span class="input-shell">
+              <i class="pi pi-envelope input-shell__icon" aria-hidden="true"></i>
+              <input
+                type="email"
+                name="email"
+                [(ngModel)]="email"
+                placeholder="nome@email.com"
+                autocomplete="email"
+              />
+            </span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">
+              Profissão ou ocupação atual
+              <small class="optional-chip">Opcional</small>
+            </span>
+            <span class="input-shell">
+              <i class="pi pi-briefcase input-shell__icon" aria-hidden="true"></i>
+              <input
+                type="text"
+                name="profession"
+                [(ngModel)]="profession"
+                placeholder="Ex.: estudante, desenvolvedor, professor, autônomo."
+                autocomplete="organization-title"
+              />
+            </span>
+          </label>
+        </div>
+      </section>
+
+      <section class="entry-section" aria-labelledby="profile-info-title">
+        <div class="entry-section__heading">
+          <span class="entry-section__kicker">Perfil</span>
+          <h2 id="profile-info-title">Dados demográficos</h2>
+        </div>
+
+        <fieldset class="field radio-field">
+          <legend>Faixa etária <span aria-hidden="true">*</span></legend>
+          <div class="option-grid option-grid--age">
+            @for (option of ageRangeOptions; track option.value) {
+              <label class="radio-option" [class.is-selected]="ageRange === option.value">
+                <input
+                  type="radio"
+                  name="ageRange"
+                  [value]="option.value"
+                  [checked]="ageRange === option.value"
+                  (change)="selectAgeRange(option.value)"
+                  required
+                />
+                <span class="radio-option__marker" aria-hidden="true"></span>
+                <span>{{ option.label }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        <fieldset class="field radio-field">
+          <legend>Escolaridade <span aria-hidden="true">*</span></legend>
+          <div class="option-grid option-grid--education">
+            @for (option of educationLevelOptions; track option.value) {
+              <label class="radio-option" [class.is-selected]="educationLevel === option.value">
+                <input
+                  type="radio"
+                  name="educationLevel"
+                  [value]="option.value"
+                  [checked]="educationLevel === option.value"
+                  (change)="selectEducationLevel(option.value)"
+                  required
+                />
+                <span class="radio-option__marker" aria-hidden="true"></span>
+                <span>{{ option.label }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        @if (asksAcademicCourse) {
+          <label class="field field--full field--nested">
+            <span class="field__label">
+              Curso
+              <small class="optional-chip">Opcional</small>
+            </span>
+            <span class="input-shell">
+              <i class="pi pi-graduation-cap input-shell__icon" aria-hidden="true"></i>
+              <input
+                type="text"
+                name="academicCourse"
+                [(ngModel)]="academicCourse"
+                placeholder="Informe o curso"
+                autocomplete="off"
+              />
+            </span>
+          </label>
+        }
+
+        <fieldset class="field radio-field radio-field--compact">
+          <legend>Gênero <span aria-hidden="true">*</span></legend>
+          <div class="option-grid option-grid--gender">
+            @for (option of genderOptions; track option.value) {
+              <label class="radio-option" [class.is-selected]="gender === option.value">
+                <input
+                  type="radio"
+                  name="gender"
+                  [value]="option.value"
+                  [checked]="gender === option.value"
+                  (change)="selectGender(option.value)"
+                  required
+                />
+                <span class="radio-option__marker" aria-hidden="true"></span>
+                <span>{{ option.label }}</span>
+              </label>
+            }
+          </div>
+        </fieldset>
+
+        @if (asksGenderDetail) {
+          <label class="field field--full field--nested">
+            <span class="field__label">
+              Se desejar, especifique
+              <small class="optional-chip">Opcional</small>
+            </span>
+            <span class="input-shell">
+              <i class="pi pi-id-card input-shell__icon" aria-hidden="true"></i>
+              <input
+                type="text"
+                name="genderDetail"
+                [(ngModel)]="genderDetail"
+                placeholder="Informe como prefere descrever"
+                autocomplete="off"
+              />
+            </span>
+          </label>
+        }
+      </section>
     </form>
-  </div>
+  </main>
 </section>

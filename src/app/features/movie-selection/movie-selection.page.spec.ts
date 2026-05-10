@@ -93,14 +93,6 @@ describe('MovieSelectionPage', () => {
     expect(component.isDrawerOpen()).toBe(false);
   });
 
-  it('shows the instructions modal by default and dismisses it from the confirmation action', () => {
-    expect(component.showInstructionsModal()).toBe(true);
-
-    component.dismissInstructionsModal();
-
-    expect(component.showInstructionsModal()).toBe(false);
-  });
-
   it('expands movie details inline instead of using a separate modal state', () => {
     const targetMovieId = MOCK_MOVIES[0].id;
 

@@ -1,0 +1,141 @@
+<section class="instructions-page">
+  <div
+    class="instructions-page__ambient instructions-page__ambient--primary"
+    aria-hidden="true"
+  ></div>
+  <div
+    class="instructions-page__ambient instructions-page__ambient--secondary"
+    aria-hidden="true"
+  ></div>
+
+  <main class="instructions-page__frame">
+    <div class="flow-nav">
+      <nav class="flow-breadcrumb" aria-label="Caminho">
+        <ol>
+          <li>
+            <button class="flow-breadcrumb__link" type="button" (click)="goToParticipantEntry()">
+              Entrada
+            </button>
+          </li>
+          <li aria-current="page">Instruções</li>
+        </ol>
+      </nav>
+
+      <div class="flow-nav__controls instructions-page__controls">
+        <button
+          class="glass-button glass-button--light glass-button--cta instructions-page__start-button"
+          type="button"
+          (click)="startMovieSelection()"
+        >
+          <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
+            <i class="pi pi-arrow-right"></i>
+          </span>
+          <span class="glass-button__content">Li e estou pronto para começar</span>
+        </button>
+      </div>
+    </div>
+
+    <header class="instructions-hero">
+      <div class="instructions-hero__copy">
+        <span class="instructions-hero__kicker">Antes de começar</span>
+        <h1>Instruções</h1>
+      </div>
+    </header>
+
+    <section class="instructions-content" aria-label="Como funciona">
+      <article class="instructions-card glass-surface">
+        <div class="instructions-card__icon" aria-hidden="true">
+          <i class="pi pi-ticket"></i>
+        </div>
+        <div class="instructions-card__copy">
+          <h2>Contexto da tarefa</h2>
+          @if (isNeutralVariant()) {
+            <p>
+              Imagine que você está planejando uma noite de filmes. Explore a lista de títulos
+              disponíveis e selecione os filmes você consideraria assistir.
+            </p>
+          } @else {
+            <p>
+              Imagine que você está planejando uma noite de filmes. Explore a lista de títulos
+              disponíveis e, no final, selecione os filmes que você consideraria assistir.
+            </p>
+          }
+        </div>
+      </article>
+
+      <section class="instructions-steps" aria-labelledby="instructions-steps-title">
+        @if (isNeutralVariant()) {
+          <div class="instructions-section-heading">
+            <span class="instructions-section-heading__kicker">Observações importantes</span>
+            <h2 id="instructions-steps-title">Observações importantes:</h2>
+          </div>
+
+          <div class="instructions-step-grid">
+            <article class="instructions-step">
+              <span class="instructions-step__number">1</span>
+              <div>
+                <p>Você pode selecionar quantos filmes desejar.</p>
+              </div>
+            </article>
+
+            <article class="instructions-step">
+              <span class="instructions-step__number">2</span>
+              <div>
+                <p>
+                  Sinta-se à vontade para escolher filmes que você já assistiu e gostaria de rever,
+                  ou filmes novos que despertam seu interesse.
+                </p>
+              </div>
+            </article>
+
+            <article class="instructions-step">
+              <span class="instructions-step__number">3</span>
+              <div>
+                <p>
+                  Não há respostas certas ou erradas; o objetivo é entender sua experiência de
+                  escolha.
+                </p>
+              </div>
+            </article>
+          </div>
+        } @else {
+          <div class="instructions-section-heading">
+            <span class="instructions-section-heading__kicker">Processo</span>
+            <h2 id="instructions-steps-title">
+              Para que o sistema possa aprender seu gosto e oferecer sugestões personalizadas, o
+              processo será em duas etapas:
+            </h2>
+          </div>
+
+          <div class="instructions-step-grid">
+            <article class="instructions-step">
+              <span class="instructions-step__number">1</span>
+              <div>
+                <p>Primeiro, você selecionará 5 filmes que você mais gosta.</p>
+              </div>
+            </article>
+
+            <article class="instructions-step">
+              <span class="instructions-step__number">2</span>
+              <div>
+                <p>
+                  Em seguida, com base neles, o sistema apresentará uma lista de recomendações.
+                  Desta lista, você selecionará quantos filmes você consideraria assistir.
+                </p>
+              </div>
+            </article>
+          </div>
+        }
+      </section>
+
+      @if (!isNeutralVariant()) {
+        <aside class="instructions-note">
+          <i class="pi pi-info-circle" aria-hidden="true"></i>
+          <p>
+            Não há respostas certas ou erradas; o objetivo é entender sua experiência com o sistema.
+          </p>
+        </aside>
+      }
+    </section>
+  </main>
+</section>

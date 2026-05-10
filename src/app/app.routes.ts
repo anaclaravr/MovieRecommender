@@ -1,35 +1,40 @@
 import { Routes } from '@angular/router';
 
+import { ExperienceHostPage } from './features/experience-host/experience-host.page';
 import { LoadingPage } from './features/loading/loading.page';
-import { MovieSelectionPage } from './features/movie-selection/movie-selection.page';
 import { ParticipantEntryPage } from './features/participant-entry/participant-entry.page';
 import { RecommendationsPage } from './features/recommendations/recommendations.page';
 import { ChoiceFeedbackPage } from './features/choice-feedback/choice-feedback.page';
+import { InstructionsPage } from './features/instructions/instructions.page';
 
 export const routes: Routes = [
   {
     path: '',
     pathMatch: 'full',
-    redirectTo: 'participant-entry'
+    redirectTo: 'participant-entry',
   },
   {
     path: 'participant-entry',
-    component: ParticipantEntryPage
+    component: ParticipantEntryPage,
+  },
+  {
+    path: 'instructions',
+    component: InstructionsPage,
   },
   {
     path: 'movie-selection',
-    component: MovieSelectionPage
+    component: ExperienceHostPage,
   },
   {
     path: 'loading',
-    component: LoadingPage
+    component: LoadingPage,
   },
   {
     path: 'recommendations',
-    component: RecommendationsPage
+    component: RecommendationsPage,
   },
   {
     path: 'choice-feedback',
-    component: ChoiceFeedbackPage
-  }
+    component: ChoiceFeedbackPage,
+  },
 ];

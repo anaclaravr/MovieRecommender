@@ -4,6 +4,8 @@ import {
   Component,
   ElementRef,
   HostListener,
+  OnDestroy,
+  OnInit,
   ViewChild,
   computed,
   inject,
@@ -12,11 +14,16 @@ import {
 import { Router } from '@angular/router';
 
 import { MOCK_MOVIES } from '../../core/mock-data/movies.mock';
+import {
+  SelectedStimulusSummary,
+  createEmptySelectedStimulusSummary,
+} from '../../core/models/experience-tracking';
 import { Movie } from '../../core/models/movie';
+import { ExperienceTrackingService } from '../../core/services/experience-tracking.service';
 import { ParticipantSessionService } from '../../core/services/participant-session.service';
 
 type GenreFilterId = 'all' | string;
-type DetailsContrast = 'light' | 'dark';
+type DetailsContrast = 'dark';
 
 interface GenreFilterOption {
   id: GenreFilterId;
@@ -24,7 +31,7 @@ interface GenreFilterOption {
   iconClass: string;
 }
 
-interface MovieSelectionCard {
+interface NeutralMovieCard {
   movie: Movie;
   posterGradient: string;
   posterImage: string;
@@ -34,22 +41,22 @@ interface MovieSelectionCard {
   ratingLabel: string;
 }
 
-const MAX_SELECTED_MOVIES = 5;
-const MOVIE_SELECTION_PAGE_SIZE = 10;
+const MOVIE_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 const ALL_GENRES_ID: GenreFilterId = 'all';
+const SEARCH_TRACKING_DEBOUNCE_MS = 600;
+const MIN_SEARCH_TRACKING_LENGTH = 2;
 const GENRE_EDGE_HOVER_THRESHOLD = 96;
 const GENRE_DRAG_THRESHOLD = 6;
-const LIGHT_DETAILS_CARD_INDEXES = new Set([1, 6]);
 const POSTER_GRADIENTS = [
-  'linear-gradient(160deg, #14344f 0%, #325b78 46%, #d2dfeb 100%)',
-  'linear-gradient(160deg, #f0e8df 0%, #d4c6b1 48%, #8d6d4f 100%)',
-  'linear-gradient(160deg, #451a1d 0%, #b53b2f 48%, #f1a13a 100%)',
-  'linear-gradient(160deg, #17193f 0%, #5339ac 48%, #9ea7f0 100%)',
-  'linear-gradient(160deg, #5b1016 0%, #a82b1e 44%, #f3c14e 100%)',
-  'linear-gradient(160deg, #0f1d33 0%, #204b74 44%, #ff7d32 100%)',
-  'linear-gradient(160deg, #b5c1cb 0%, #edf2f5 48%, #7f8f99 100%)',
-  'linear-gradient(160deg, #183149 0%, #446c8d 48%, #9ec3de 100%)',
+  'linear-gradient(160deg, #dfe7ed 0%, #aab8c2 100%)',
+  'linear-gradient(160deg, #ece7df 0%, #c8bba9 100%)',
+  'linear-gradient(160deg, #dde3e8 0%, #9caab4 100%)',
+  'linear-gradient(160deg, #e8e1e8 0%, #b8a9bd 100%)',
+  'linear-gradient(160deg, #e9e2dc 0%, #bca996 100%)',
+  'linear-gradient(160deg, #dce6e8 0%, #9fb4ba 100%)',
+  'linear-gradient(160deg, #e4e8ea 0%, #b6bec4 100%)',
+  'linear-gradient(160deg, #dfe8e2 0%, #a8b9ad 100%)',
 ] as const;
 const GENRE_LABELS: Record<string, string> = {
   Action: 'Ação',
@@ -65,7 +72,7 @@ const GENRE_LABELS: Record<string, string> = {
   Thriller: 'Thriller',
 };
 const GENRE_ICON_CLASSES: Record<string, string> = {
-  [ALL_GENRES_ID]: 'pi pi-sparkles',
+  [ALL_GENRES_ID]: 'pi pi-list',
   Action: 'pi pi-bolt',
   Adventure: 'pi pi-compass',
   Animation: 'pi pi-palette',
@@ -78,7 +85,6 @@ const GENRE_ICON_CLASSES: Record<string, string> = {
   'Science Fiction': 'pi pi-globe',
   Thriller: 'pi pi-camera',
 };
-const SELECTION_LIMIT_HINT = 'Voce ja selecionou 5 filmes. Remova um para escolher outro.';
 const MOVIE_DETAILS: Record<string, { durationLabel: string; ratingLabel: string }> = {
   arrival: {
     durationLabel: '1h 56min',
@@ -142,21 +148,22 @@ function getGenreIconClass(genre: GenreFilterId): string {
   return GENRE_ICON_CLASSES[genre] ?? 'pi pi-tag';
 }
 
-const MOVIE_SELECTION_CARDS: MovieSelectionCard[] = MOCK_MOVIES.map((movie, index) => {
+function createNeutralMovieCard(movie: Movie, index: number): NeutralMovieCard {
   const details = MOVIE_DETAILS[movie.id] ?? FALLBACK_MOVIE_DETAILS;
 
   return {
     movie,
     posterGradient: POSTER_GRADIENTS[index % POSTER_GRADIENTS.length],
     posterImage: `url("${movie.posterUrl}")`,
-    detailsContrast: LIGHT_DETAILS_CARD_INDEXES.has(index) ? 'light' : 'dark',
+    detailsContrast: 'dark',
     genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' • '),
     durationLabel: details.durationLabel,
     ratingLabel: details.ratingLabel,
   };
-});
+}
 
-const MOVIE_CARD_BY_ID = new Map(MOVIE_SELECTION_CARDS.map((card) => [card.movie.id, card]));
+const NEUTRAL_MOVIE_CARDS = MOCK_MOVIES.map((movie, index) => createNeutralMovieCard(movie, index));
+const MOVIE_CARD_BY_ID = new Map(NEUTRAL_MOVIE_CARDS.map((card) => [card.movie.id, card]));
 const GENRE_OPTIONS: GenreFilterOption[] = [
   { id: ALL_GENRES_ID, label: 'Todos', iconClass: getGenreIconClass(ALL_GENRES_ID) },
   ...Array.from(new Set(MOCK_MOVIES.flatMap((movie) => movie.genres)))
@@ -169,9 +176,7 @@ const GENRE_OPTIONS: GenreFilterOption[] = [
 ];
 
 function normalizeSelectedMovieIds(ids: string[]): string[] {
-  return Array.from(new Set(ids))
-    .filter((id) => MOVIE_CARD_BY_ID.has(id))
-    .slice(0, MAX_SELECTED_MOVIES);
+  return Array.from(new Set(ids)).filter((id) => MOVIE_CARD_BY_ID.has(id));
 }
 
 function hasSameIds(left: string[], right: string[]): boolean {
@@ -179,60 +184,46 @@ function hasSameIds(left: string[], right: string[]): boolean {
 }
 
 @Component({
-  selector: 'app-movie-selection-page',
-  templateUrl: './movie-selection.page.html',
-  styleUrl: './movie-selection.page.scss',
+  selector: 'app-neutral-experience-page',
+  templateUrl: './neutral-experience.page.html',
+  styleUrl: './neutral-experience.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MovieSelectionPage implements AfterViewInit {
+export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
   @ViewChild('genreScroller') private genreScroller?: ElementRef<HTMLDivElement>;
 
-  private readonly participantSessionService = inject(ParticipantSessionService);
   private readonly router = inject(Router);
+  private readonly participantSessionService = inject(ParticipantSessionService);
+  private readonly experienceTrackingService = inject(ExperienceTrackingService);
   private genreDragPointerId: number | null = null;
   private genreDragStartX = 0;
   private genreDragStartScrollLeft = 0;
   private shouldSuppressGenreClick = false;
+  private searchTrackingTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastTrackedSearchQuery = '';
 
-  readonly selectionSteps = [1, 2, 3, 4, 5];
-  readonly maxSelectedMovies = MAX_SELECTED_MOVIES;
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly genreOptions = GENRE_OPTIONS;
   readonly session = this.participantSessionService.session;
-  readonly selectionLimitHint = SELECTION_LIMIT_HINT;
   readonly searchQuery = signal('');
   readonly activeGenreId = signal<GenreFilterId>(ALL_GENRES_ID);
+  readonly isDrawerOpen = signal(false);
   readonly expandedMovieId = signal<string | null>(null);
   readonly expandedMovieRowStart = signal(0);
   readonly visualMovieOrderIds = signal<string[]>([]);
-  readonly isDrawerOpen = signal(false);
-  readonly showSelectionLimitHint = signal(false);
-  readonly showContinueRequirementAlert = signal(false);
+  readonly moviePageIndex = signal(0);
+  readonly moviePageSize = signal(MOVIE_PAGE_SIZE);
+  readonly viewportWidth = signal(typeof window === 'undefined' ? 1440 : window.innerWidth);
   readonly canScrollGenresLeft = signal(false);
   readonly canScrollGenresRight = signal(false);
   readonly isDraggingGenreScroller = signal(false);
   readonly genreEdgeHover = signal<'start' | 'end' | null>(null);
-  readonly moviePageIndex = signal(0);
-  readonly moviePageSize = signal(MOVIE_SELECTION_PAGE_SIZE);
-  readonly viewportWidth = signal(typeof window === 'undefined' ? 1440 : window.innerWidth);
 
   readonly selectedMovieIds = computed(() =>
-    normalizeSelectedMovieIds(this.session().selectedSeedMovieIds),
+    normalizeSelectedMovieIds(this.session().selectedNeutralMovieIds),
   );
   readonly selectedMovieIdSet = computed(() => new Set(this.selectedMovieIds()));
   readonly selectedCount = computed(() => this.selectedMovieIds().length);
-  readonly canContinue = computed(() => this.selectedCount() === this.maxSelectedMovies);
-  readonly continueRequirementMessage = computed(() => {
-    const remainingMovies = this.maxSelectedMovies - this.selectedCount();
-
-    if (remainingMovies <= 0) {
-      return 'Você já selecionou os 5 filmes necessários para continuar.';
-    }
-
-    return `Escolha mais ${remainingMovies} ${
-      remainingMovies === 1 ? 'filme' : 'filmes'
-    } para avançar para as recomendações.`;
-  });
   readonly activeGenreLabel = computed(
     () =>
       this.genreOptions.find((genre) => genre.id === this.activeGenreId())?.label ??
@@ -242,7 +233,7 @@ export class MovieSelectionPage implements AfterViewInit {
     const normalizedSearch = this.searchQuery().trim().toLowerCase();
     const activeGenreId = this.activeGenreId();
 
-    return MOVIE_SELECTION_CARDS.filter((card) => {
+    return NEUTRAL_MOVIE_CARDS.filter((card) => {
       const matchesSearch = normalizedSearch
         ? card.movie.title.toLowerCase().includes(normalizedSearch)
         : true;
@@ -280,7 +271,7 @@ export class MovieSelectionPage implements AfterViewInit {
   readonly selectedCards = computed(() =>
     this.selectedMovieIds()
       .map((movieId) => MOVIE_CARD_BY_ID.get(movieId))
-      .filter((card): card is MovieSelectionCard => Boolean(card)),
+      .filter((card): card is NeutralMovieCard => Boolean(card)),
   );
   readonly hasNoResults = computed(() => this.filteredCards().length === 0);
   readonly emptyStateMessage = computed(() => {
@@ -300,19 +291,27 @@ export class MovieSelectionPage implements AfterViewInit {
       return `Nenhum filme encontrado em ${this.activeGenreLabel()}.`;
     }
 
-    return 'Nenhum filme disponivel no momento.';
+    return 'Nenhum filme disponível no momento.';
   });
 
   constructor() {
-    const normalizedIds = normalizeSelectedMovieIds(this.session().selectedSeedMovieIds);
+    const normalizedIds = normalizeSelectedMovieIds(this.session().selectedNeutralMovieIds);
 
-    if (!hasSameIds(normalizedIds, this.session().selectedSeedMovieIds)) {
-      this.participantSessionService.setSelectedSeedMovieIds(normalizedIds);
+    if (!hasSameIds(normalizedIds, this.session().selectedNeutralMovieIds)) {
+      this.participantSessionService.setSelectedNeutralMovieIds(normalizedIds);
     }
+  }
+
+  ngOnInit(): void {
+    this.experienceTrackingService.trackExperienceStarted(this.trackingContext());
   }
 
   ngAfterViewInit(): void {
     this.scheduleGenreScrollStateUpdate();
+  }
+
+  ngOnDestroy(): void {
+    this.clearSearchTrackingTimer();
   }
 
   @HostListener('document:keydown.escape')
@@ -339,13 +338,18 @@ export class MovieSelectionPage implements AfterViewInit {
   updateSearchQuery(query: string): void {
     this.searchQuery.set(query);
     this.resetMoviePagination();
-    this.showSelectionLimitHint.set(false);
+    this.scheduleSearchTracking(query);
   }
 
   selectGenre(genreId: GenreFilterId): void {
+    const previousGenreId = this.activeGenreId();
+
     this.activeGenreId.set(genreId);
     this.resetMoviePagination();
-    this.showSelectionLimitHint.set(false);
+
+    if (genreId !== previousGenreId) {
+      this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'genre_filter');
+    }
   }
 
   selectGenreFromClick(genreId: GenreFilterId, event: Event): void {
@@ -493,30 +497,32 @@ export class MovieSelectionPage implements AfterViewInit {
     }
   }
 
-  toggleMovieSelection(movieId: string, event?: Event): void {
+  toggleWouldWatch(movieId: string, event?: Event): void {
     event?.preventDefault();
     event?.stopPropagation();
 
     const selectedMovieIds = this.selectedMovieIds();
+    const isSelectingMovie = !selectedMovieIds.includes(movieId);
 
-    if (selectedMovieIds.includes(movieId)) {
-      this.updateSelectedMovieIds(selectedMovieIds.filter((selectedId) => selectedId !== movieId));
-      return;
+    if (isSelectingMovie) {
+      this.flushPendingSearchTracking();
+      this.trackMovieSelected(movieId);
     }
 
-    if (selectedMovieIds.length >= this.maxSelectedMovies) {
-      this.showSelectionLimitHint.set(true);
-      return;
-    }
+    const nextMovieIds = selectedMovieIds.includes(movieId)
+      ? selectedMovieIds.filter((selectedId) => selectedId !== movieId)
+      : [...selectedMovieIds, movieId];
 
-    this.updateSelectedMovieIds([...selectedMovieIds, movieId]);
+    this.participantSessionService.setSelectedNeutralMovieIds(
+      normalizeSelectedMovieIds(nextMovieIds),
+    );
   }
 
   removeSelectedMovie(movieId: string, event?: Event): void {
     event?.preventDefault();
     event?.stopPropagation();
 
-    this.updateSelectedMovieIds(
+    this.participantSessionService.setSelectedNeutralMovieIds(
       this.selectedMovieIds().filter((selectedId) => selectedId !== movieId),
     );
   }
@@ -536,6 +542,7 @@ export class MovieSelectionPage implements AfterViewInit {
     this.visualMovieOrderIds.set(visualMovieOrderIds);
     this.expandedMovieRowStart.set(visualMovieOrderIds.indexOf(movieId));
     this.expandedMovieId.set(movieId);
+    this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'details_opened');
   }
 
   closeExpandedDetails(): void {
@@ -557,11 +564,11 @@ export class MovieSelectionPage implements AfterViewInit {
   onCardKeydown(event: KeyboardEvent, movieId: string): void {
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
-      this.toggleMovieSelection(movieId);
+      this.toggleWouldWatch(movieId);
     }
   }
 
-  goToPreviousStep(): void {
+  goToInstructions(): void {
     void this.router.navigateByUrl('/instructions');
   }
 
@@ -569,23 +576,15 @@ export class MovieSelectionPage implements AfterViewInit {
     void this.router.navigateByUrl('/participant-entry');
   }
 
-  continueToLoading(): void {
-    if (!this.canContinue()) {
-      this.showContinueRequirementAlert.set(true);
-      this.showSelectionLimitHint.set(false);
-      return;
-    }
+  finishExperience(): void {
+    const selectedMovieIds = this.selectedMovieIds();
 
-    this.showContinueRequirementAlert.set(false);
-    void this.router.navigateByUrl('/loading');
-  }
-
-  dismissContinueRequirementAlert(): void {
-    this.showContinueRequirementAlert.set(false);
-  }
-
-  dismissSelectionLimitHint(): void {
-    this.showSelectionLimitHint.set(false);
+    this.flushPendingSearchTracking();
+    this.experienceTrackingService.trackExperienceCompleted(this.trackingContext(), {
+      selectedMovieIds,
+      selectedStimulusSummary: this.selectedStimulusSummary(selectedMovieIds),
+    });
+    void this.router.navigateByUrl('/choice-feedback');
   }
 
   goToMoviePage(pageIndex: number): void {
@@ -626,10 +625,6 @@ export class MovieSelectionPage implements AfterViewInit {
     return this.selectedMovieIdSet().has(movieId);
   }
 
-  isSelectionBlocked(movieId: string): boolean {
-    return !this.isMovieSelected(movieId) && this.selectedCount() >= this.maxSelectedMovies;
-  }
-
   isDetailsExpanded(movieId: string): boolean {
     return this.expandedMovieId() === movieId;
   }
@@ -646,20 +641,88 @@ export class MovieSelectionPage implements AfterViewInit {
     return Math.max(0, cardIndex);
   }
 
-  private updateSelectedMovieIds(ids: string[]): void {
-    const normalizedIds = normalizeSelectedMovieIds(ids);
-
-    this.participantSessionService.setSelectedSeedMovieIds(normalizedIds);
-    this.showSelectionLimitHint.set(false);
-
-    if (normalizedIds.length === this.maxSelectedMovies) {
-      this.showContinueRequirementAlert.set(false);
-    }
-  }
-
   private resetMoviePagination(): void {
     this.moviePageIndex.set(0);
     this.closeExpandedDetails();
+  }
+
+  private scheduleSearchTracking(query: string): void {
+    this.clearSearchTrackingTimer();
+
+    const normalizedQuery = this.normalizedSearchQuery(query);
+
+    if (!this.shouldTrackSearchQuery(normalizedQuery)) {
+      return;
+    }
+
+    this.searchTrackingTimer = setTimeout(() => {
+      this.searchTrackingTimer = null;
+      this.trackSearchQuery(normalizedQuery);
+    }, SEARCH_TRACKING_DEBOUNCE_MS);
+  }
+
+  private flushPendingSearchTracking(): void {
+    if (!this.searchTrackingTimer) {
+      return;
+    }
+
+    this.clearSearchTrackingTimer();
+    this.trackSearchQuery(this.normalizedSearchQuery(this.searchQuery()));
+  }
+
+  private clearSearchTrackingTimer(): void {
+    if (!this.searchTrackingTimer) {
+      return;
+    }
+
+    clearTimeout(this.searchTrackingTimer);
+    this.searchTrackingTimer = null;
+  }
+
+  private trackSearchQuery(normalizedQuery: string): void {
+    if (!this.shouldTrackSearchQuery(normalizedQuery)) {
+      return;
+    }
+
+    this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'search');
+    this.lastTrackedSearchQuery = normalizedQuery;
+  }
+
+  private normalizedSearchQuery(query: string): string {
+    return query.trim().toLowerCase();
+  }
+
+  private shouldTrackSearchQuery(normalizedQuery: string): boolean {
+    return (
+      normalizedQuery.length >= MIN_SEARCH_TRACKING_LENGTH &&
+      normalizedQuery !== this.lastTrackedSearchQuery
+    );
+  }
+
+  private trackMovieSelected(movieId: string): void {
+    const card = MOVIE_CARD_BY_ID.get(movieId);
+
+    if (!card) {
+      return;
+    }
+
+    this.experienceTrackingService.trackMovieSelected(this.trackingContext(), {
+      movieId: card.movie.id,
+      movieTitle: card.movie.title,
+      persuasiveStimulusType: 'none',
+    });
+  }
+
+  private selectedStimulusSummary(selectedMovieIds: string[]): SelectedStimulusSummary {
+    const summary = createEmptySelectedStimulusSummary();
+
+    summary.none = selectedMovieIds.length;
+
+    return summary;
+  }
+
+  private trackingContext() {
+    return this.experienceTrackingService.createContext(this.session());
   }
 
   private scheduleGenreScrollStateUpdate(): void {
@@ -717,7 +780,7 @@ export class MovieSelectionPage implements AfterViewInit {
   }
 
   private currentMovieVisualSlots(
-    cards: MovieSelectionCard[],
+    cards: NeutralMovieCard[],
     gridColumns: number,
   ): Map<string, number> {
     const expandedMovieId = this.expandedMovieId();
@@ -744,7 +807,7 @@ export class MovieSelectionPage implements AfterViewInit {
     return visualSlots;
   }
 
-  private currentMovieOrderIds(cards: MovieSelectionCard[]): string[] {
+  private currentMovieOrderIds(cards: NeutralMovieCard[]): string[] {
     const pageMovieIds = cards.map((card) => card.movie.id);
     const expandedMovieId = this.expandedMovieId();
     const visualMovieOrderIds = this.visualMovieOrderIds();

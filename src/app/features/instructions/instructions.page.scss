@@ -1,0 +1,277 @@
+.instructions-page {
+  position: relative;
+  min-height: 100vh;
+  padding: 2.25rem var(--flow-page-inline) 3rem;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.95), transparent 24rem),
+    radial-gradient(circle at 12% 18%, rgba(126, 173, 197, 0.14), transparent 19rem),
+    radial-gradient(circle at 88% 20%, rgba(163, 69, 164, 0.1), transparent 20rem),
+    linear-gradient(180deg, #fbfcfc 0%, #f4f7f8 100%);
+}
+
+.instructions-page::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.34) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.32) 1px, transparent 1px);
+  background-size: 4.8rem 4.8rem;
+  mask-image: radial-gradient(circle at top, rgba(0, 0, 0, 0.4), transparent 72%);
+  pointer-events: none;
+}
+
+.instructions-page__ambient {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.instructions-page__ambient--primary {
+  width: 22rem;
+  height: 22rem;
+  top: 3rem;
+  left: calc(50% - 11rem);
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.82),
+    rgba(163, 69, 164, 0.08) 50%,
+    transparent 70%
+  );
+}
+
+.instructions-page__ambient--secondary {
+  width: 18rem;
+  height: 18rem;
+  right: 8%;
+  top: 22rem;
+  background: radial-gradient(circle, rgba(142, 189, 208, 0.15), transparent 68%);
+}
+
+.instructions-page__frame {
+  position: relative;
+  z-index: 1;
+  width: min(100%, var(--flow-content-width-wide));
+  margin: 0 auto;
+  display: grid;
+  gap: 2.15rem;
+}
+
+.instructions-page .flow-nav {
+  justify-self: start;
+}
+
+.instructions-page__controls {
+  justify-content: flex-end;
+}
+
+.instructions-page__start-button {
+  --glass-button-height: 3rem;
+  --glass-button-padding-block: 0.68rem;
+  --glass-button-padding-inline: 1.05rem;
+  --glass-button-gap: 0.5rem;
+  --glass-button-font-size: 0.95rem;
+}
+
+.instructions-page__start-button .glass-button__icon {
+  color: currentColor;
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.instructions-hero {
+  min-width: 0;
+}
+
+.instructions-hero__copy {
+  min-width: 0;
+  display: grid;
+  gap: 0.72rem;
+}
+
+.instructions-hero__kicker,
+.instructions-section-heading__kicker {
+  color: var(--color-accent-strong);
+  font-size: 0.72rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--letter-spacing-overline);
+  text-transform: uppercase;
+}
+
+.instructions-hero h1 {
+  margin: 0;
+  color: var(--color-page-title);
+  font-size: var(--font-size-page-title);
+  font-weight: var(--font-weight-page-title);
+  line-height: var(--line-height-page-title);
+  letter-spacing: var(--letter-spacing-page-title);
+  overflow-wrap: anywhere;
+}
+
+.instructions-hero p,
+.instructions-card p,
+.instructions-step p,
+.instructions-note p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.instructions-card__copy,
+.instructions-content,
+.instructions-steps,
+.instructions-section-heading {
+  min-width: 0;
+  display: grid;
+}
+
+.instructions-content {
+  gap: 1.75rem;
+}
+
+.instructions-card {
+  min-width: 0;
+  padding: 1.25rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+  border-radius: 1.25rem;
+}
+
+.instructions-card__icon,
+.instructions-step__number,
+.instructions-note .pi {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  background: rgba(163, 69, 164, 0.1);
+  color: var(--color-accent-strong);
+}
+
+.instructions-card__icon {
+  width: 2.65rem;
+  height: 2.65rem;
+  border-radius: 0.85rem;
+  font-size: 1.08rem;
+}
+
+.instructions-card__copy {
+  gap: 0.35rem;
+}
+
+.instructions-card h2,
+.instructions-section-heading h2 {
+  margin: 0;
+  color: #26323a;
+  font-weight: var(--font-weight-semibold);
+  overflow-wrap: anywhere;
+}
+
+.instructions-card h2,
+.instructions-section-heading h2 {
+  font-size: 1.25rem;
+  line-height: 1.2;
+}
+
+.instructions-card p,
+.instructions-step p,
+.instructions-note p {
+  line-height: var(--line-height-body);
+}
+
+.instructions-steps {
+  gap: 1.1rem;
+}
+
+.instructions-section-heading {
+  gap: 0.35rem;
+}
+
+.instructions-step-grid {
+  position: relative;
+  display: grid;
+  gap: 0;
+  padding-left: 1.16rem;
+}
+
+.instructions-step-grid::before {
+  content: '';
+  position: absolute;
+  top: 1.1rem;
+  bottom: 1.1rem;
+  left: 1.16rem;
+  width: 1px;
+  background: rgba(163, 69, 164, 0.18);
+}
+
+.instructions-step {
+  position: relative;
+  min-width: 0;
+  padding: 0 0 1.15rem 1.6rem;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+}
+
+.instructions-step:last-child {
+  padding-bottom: 0;
+}
+
+.instructions-step__number {
+  position: absolute;
+  top: 0;
+  left: -1.16rem;
+  z-index: 1;
+  width: 2.2rem;
+  height: 2.2rem;
+  border: 1px solid rgba(163, 69, 164, 0.14);
+  border-radius: 0.72rem;
+  font-size: 0.92rem;
+  font-weight: var(--font-weight-semibold);
+  box-shadow: 0 8px 18px rgba(163, 69, 164, 0.08);
+}
+
+.instructions-step div {
+  min-width: 0;
+  display: grid;
+  gap: 0.35rem;
+  grid-column: 2;
+}
+
+.instructions-note {
+  min-width: 0;
+  padding: 0.9rem 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: start;
+  border-top: 1px solid rgba(55, 62, 67, 0.08);
+}
+
+.instructions-note .pi {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.7rem;
+}
+
+@media (max-width: 42rem) {
+  .instructions-page {
+    padding-block: 1.5rem 2rem;
+  }
+
+  .instructions-page__frame {
+    gap: 1.6rem;
+  }
+
+  .instructions-hero h1 {
+    font-size: 2.15rem;
+  }
+
+  .instructions-card,
+  .instructions-note {
+    grid-template-columns: 1fr;
+  }
+}

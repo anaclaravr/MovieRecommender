@@ -1,4 +1,5 @@
-export type AppVariant = 'mediated' | 'neutral';
+export type ExperimentVariant = 'mediated' | 'neutral';
+export type AppVariant = ExperimentVariant;
 export type ParticipantAgeRange =
   | '18-24'
   | '25-30'
@@ -6,25 +7,32 @@ export type ParticipantAgeRange =
   | '37-42'
   | '43-48'
   | '49-54'
-  | '55-60';
+  | '55-60'
+  | 'prefer-not-answer';
 export type ParticipantEducationLevel =
-  | 'high-school'
-  | 'technical'
-  | 'undergraduate-student'
-  | 'undergraduate-complete'
-  | 'postgraduate'
-  | 'masters'
-  | 'doctorate';
-export type ParticipantSex = 'female' | 'male';
+  | 'elementary-incomplete'
+  | 'elementary-complete'
+  | 'high-school-incomplete'
+  | 'high-school-complete'
+  | 'higher-education-in-progress'
+  | 'higher-education-complete'
+  | 'postgraduate-in-progress'
+  | 'postgraduate-complete'
+  | 'prefer-not-answer';
+export type ParticipantGender = 'female' | 'male' | 'non-binary' | 'other' | 'prefer-not-answer';
 
 export interface ParticipantSession {
+  sessionId: string;
+  participantId: string;
   name: string;
   email?: string;
   ageRange?: ParticipantAgeRange;
   profession?: string;
   educationLevel?: ParticipantEducationLevel;
-  undergraduateCourse?: string;
-  sex?: ParticipantSex;
+  academicCourse?: string;
+  gender?: ParticipantGender;
+  genderDetail?: string;
   selectedSeedMovieIds: string[];
-  variant: AppVariant;
+  selectedNeutralMovieIds: string[];
+  experimentVariant: ExperimentVariant;
 }

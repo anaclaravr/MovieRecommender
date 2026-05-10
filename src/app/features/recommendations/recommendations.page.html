@@ -60,9 +60,9 @@
       </div>
     </header>
 
-    <section class="liked-section" aria-label="Você gostou de">
+    <section class="liked-section" aria-label="Porque você assistiu...">
       <div class="section-heading">
-        <span class="section-heading__kicker">Você gostou de</span>
+        <span class="section-heading__kicker">Porque você assistiu...</span>
       </div>
 
       @if (seedCards().length) {
@@ -110,6 +110,7 @@
             [attr.aria-expanded]="isDetailsExpanded(card.movie.id)"
             (click)="openDetailsFromCard(card.movie.id, $event)"
             (keydown)="onRecommendationCardKeydown($event, card.movie.id)"
+            (pointermove)="updateRecommendationTooltipPosition($event)"
           >
             <div
               class="recommendation-card__poster"
@@ -120,27 +121,40 @@
                 <span class="recommendation-card__rank">{{ card.rankLabel }}</span>
               }
 
-              <div class="recommendation-card__poster-copy">
-                <span>{{ card.movie.year }}</span>
-                <strong>{{ card.movie.title }}</strong>
+              @if (card.ratingBadgeLabel) {
+                <span class="recommendation-card__quality-label">
+                  <i class="pi pi-star-fill" aria-hidden="true"></i>
+                  <span>{{ card.ratingBadgeLabel }}</span>
+                </span>
+              }
+
+              <div class="recommendation-card__poster-chips">
+                @if (card.mediatedCue) {
+                  <span class="recommendation-card__poster-chip">{{ card.mediatedCue }}</span>
+                }
+
+                @if (!isTopRecommendation(card)) {
+                  <span class="recommendation-card__poster-chip">Recomendado pelo seu perfil</span>
+                }
               </div>
             </div>
 
             <div class="recommendation-card__body">
               <div class="recommendation-card__title-row">
-                <div>
-                  @if (card.mediatedCue) {
-                    <span class="recommendation-card__match">{{ card.mediatedCue }}</span>
-                  } @else {
-                    <span class="recommendation-card__match recommendation-card__match--neutral">
-                      Recomendado pelo seu perfil
-                    </span>
-                  }
-                  <h3>{{ card.movie.title }}</h3>
+                <div class="recommendation-card__title-copy">
+                  <span class="text-overline recommendation-card__year-overline">
+                    {{ card.movie.year }}
+                  </span>
+                  <h3 class="recommendation-card__title">{{ card.movie.title }}</h3>
+                  <p class="recommendation-card__genres">{{ card.genresLabel }}</p>
+                </div>
+
+                <div class="recommendation-card__rating">
+                  <i class="pi pi-star-fill" aria-hidden="true"></i>
+                  <span>Nota</span>
+                  <strong>{{ card.ratingLabel }}</strong>
                 </div>
               </div>
-
-              <p class="recommendation-card__genres">{{ card.genresLabel }}</p>
 
               <div class="recommendation-card__actions">
                 <button
@@ -151,7 +165,7 @@
                   (click)="toggleWouldWatch(card.movie.id, $event)"
                 >
                   <i
-                    [class]="isMarkedWouldWatch(card.movie.id) ? 'pi pi-check' : 'pi pi-plus'"
+                    [class]="isMarkedWouldWatch(card.movie.id) ? 'pi pi-check' : 'pi pi-eye'"
                     aria-hidden="true"
                   ></i>
                   <span>{{ isMarkedWouldWatch(card.movie.id) ? 'Assistiria' : 'Assistiria' }}</span>
@@ -285,7 +299,7 @@
             (click)="toggleWouldWatch(card.movie.id, $event)"
           >
             <i
-              [class]="isMarkedWouldWatch(card.movie.id) ? 'pi pi-check' : 'pi pi-plus'"
+              [class]="isMarkedWouldWatch(card.movie.id) ? 'pi pi-check' : 'pi pi-eye'"
               aria-hidden="true"
             ></i>
             <span>Assistiria</span>
@@ -294,83 +308,4 @@
       </div>
     }
   </aside>
-
-  @if (isFinishModalOpen()) {
-    <div
-      class="finish-modal-backdrop"
-      role="presentation"
-      aria-hidden="true"
-      (click)="closeFinishModal()"
-    ></div>
-
-    <section
-      class="finish-modal glass-surface"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="finish-modal-title"
-      aria-describedby="finish-modal-description"
-    >
-      <div class="finish-modal__header">
-        <span class="finish-modal__icon" aria-hidden="true">
-          <i class="pi pi-check-circle"></i>
-        </span>
-
-        <div>
-          <h2 id="finish-modal-title">Confirmar filmes selecionados</h2>
-          <p id="finish-modal-description">
-            Confira os filmes marcados como assistiria antes de seguir para o questionário.
-          </p>
-        </div>
-      </div>
-
-      @if (selectedRecommendationCards().length) {
-        <div class="finish-modal__movie-list" aria-label="Filmes selecionados">
-          @for (card of selectedRecommendationCards(); track card.movie.id) {
-            <article class="finish-modal__movie">
-              <div
-                class="finish-modal__poster"
-                [style.--poster-gradient]="card.posterGradient"
-                [style.--poster-image]="card.posterImage"
-              >
-                <span>{{ card.movie.year }}</span>
-              </div>
-
-              <div class="finish-modal__movie-meta">
-                <h3>{{ card.movie.title }}</h3>
-                <p>{{ card.genresLabel }}</p>
-              </div>
-            </article>
-          }
-        </div>
-      } @else {
-        <p class="finish-modal__empty">
-          Nenhum filme foi marcado como assistiria.
-        </p>
-      }
-
-      <div class="finish-modal__actions">
-        <button
-          class="glass-button glass-button--light finish-modal__back-button"
-          type="button"
-          (click)="closeFinishModal()"
-        >
-          <span class="glass-button__icon" aria-hidden="true">
-            <i class="pi pi-arrow-left"></i>
-          </span>
-          <span class="glass-button__content">Voltar</span>
-        </button>
-
-        <button
-          class="glass-button glass-button--light glass-button--cta finish-modal__finish-button"
-          type="button"
-          (click)="confirmFinishRecommendations()"
-        >
-          <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
-            <i class="pi pi-check"></i>
-          </span>
-          <span class="glass-button__content">Finalizar</span>
-        </button>
-      </div>
-    </section>
-  }
 </section>
