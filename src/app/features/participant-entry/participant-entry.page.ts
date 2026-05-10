@@ -39,15 +39,15 @@ export class ParticipantEntryPage {
     { label: '37 a 42 anos', value: '37-42' },
     { label: '43 a 48 anos', value: '43-48' },
     { label: '49 a 54 anos', value: '49-54' },
-    { label: '55 a 60 anos', value: '55-60' },
+    { label: '55 ou mais', value: '55-60' },
   ];
 
   readonly educationLevelOptions: SelectionOption<ParticipantEducationLevel>[] = [
-    { label: 'Ensino medio', value: 'high-school' },
-    { label: 'Ensino tecnico', value: 'technical' },
-    { label: 'Estudante de graduacao', value: 'undergraduate-student' },
-    { label: 'Graduacao completa', value: 'undergraduate-complete' },
-    { label: 'Pos-graduacao', value: 'postgraduate' },
+    { label: 'Ensino médio', value: 'high-school' },
+    { label: 'Ensino técnico', value: 'technical' },
+    { label: 'Estudante de graduação', value: 'undergraduate-student' },
+    { label: 'Graduação completa', value: 'undergraduate-complete' },
+    { label: 'Pós-graduação', value: 'postgraduate' },
     { label: 'Mestrado', value: 'masters' },
     { label: 'Doutorado', value: 'doctorate' },
   ];

@@ -144,6 +144,7 @@ export class MovieSelectionPage implements AfterViewInit {
   readonly expandedMovieRowStart = signal(0);
   readonly visualMovieOrderIds = signal<string[]>([]);
   readonly isDrawerOpen = signal(false);
+  readonly showInstructionsModal = signal(true);
   readonly showSelectionLimitHint = signal(false);
   readonly showContinueRequirementAlert = signal(false);
   readonly canScrollGenresLeft = signal(false);
@@ -490,6 +491,10 @@ export class MovieSelectionPage implements AfterViewInit {
   closeDrawer(): void {
     this.isDrawerOpen.set(false);
     this.scheduleGenreScrollStateUpdate();
+  }
+
+  dismissInstructionsModal(): void {
+    this.showInstructionsModal.set(false);
   }
 
   onCardKeydown(event: KeyboardEvent, movieId: string): void {

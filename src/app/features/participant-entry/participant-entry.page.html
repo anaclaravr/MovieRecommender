@@ -1,26 +1,26 @@
 <section class="page-shell">
   <div class="page-panel glass-surface">
-    <span class="page-kicker">Step 1 of 4</span>
+    <span class="page-kicker">Etapa 1 de 4</span>
     <h1>Dados do participante</h1>
     <p class="lead">
-      Essas informacoes ajudam a contextualizar seu perfil de participante no
-      estudo do TCC sobre recomendacao de filmes.
+      Essas informações ajudam a contextualizar seu perfil de participante no
+      estudo do TCC sobre recomendação de filmes.
     </p>
 
     <form class="entry-form" (ngSubmit)="submit()">
       <label class="field">
-        <span>Name *</span>
+        <span>Nome *</span>
         <input
           type="text"
           name="name"
           [(ngModel)]="name"
-          placeholder="Enter participant name"
+          placeholder="Informe seu nome"
           required
         />
       </label>
 
       <label class="field">
-        <span>Email (optional)</span>
+        <span>Email (opcional)</span>
         <input
           type="email"
           name="email"
@@ -46,19 +46,8 @@
         </div>
       </fieldset>
 
-      <label class="field">
-        <span>Profissao *</span>
-        <input
-          type="text"
-          name="profession"
-          [(ngModel)]="profession"
-          placeholder="Informe sua profissão"
-          required
-        />
-      </label>
-
       <fieldset class="field option-group">
-        <legend>Nivel escolar *</legend>
+        <legend>Nível escolar *</legend>
         <div class="option-grid">
           @for (option of educationLevelOptions; track option.value) {
             <label class="check-option">
@@ -76,7 +65,7 @@
 
       @if (requiresUndergraduateCourse) {
         <label class="field nested-field">
-          <span>Curso de graduacao *</span>
+          <span>Curso de graduação *</span>
           <input
             type="text"
             name="undergraduateCourse"
@@ -86,6 +75,17 @@
           />
         </label>
       }
+
+      <label class="field">
+        <span>Profissão *</span>
+        <input
+          type="text"
+          name="profession"
+          [(ngModel)]="profession"
+          placeholder="Informe sua profissão"
+          required
+        />
+      </label>
 
       <fieldset class="field option-group">
         <legend>Sexo *</legend>
@@ -105,12 +105,12 @@
       </fieldset>
 
       <p class="helper-text">
-        O botao continuar fica desabilitado ate todos os campos obrigatorios serem preenchidos.
+        O botão continuar fica desabilitado até todos os campos obrigatórios serem preenchidos.
       </p>
 
       <div class="page-actions">
         <button class="action-button" type="submit" [disabled]="!canContinue">
-          Continue to movie selection
+          Continuar para seleção de filmes
         </button>
       </div>
     </form>

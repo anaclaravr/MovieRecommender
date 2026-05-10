@@ -367,4 +367,30 @@
       </aside>
     </div>
   </div>
+
+  @if (showInstructionsModal()) {
+    <div class="instructions-modal-backdrop" role="presentation">
+      <section
+        class="instructions-modal glass-surface"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="instructions-modal-title"
+      >
+        <h2 id="instructions-modal-title">Instruções</h2>
+        <p>
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus suspendisse
+          lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum
+          ultrices diam.
+        </p>
+
+        <button
+          class="glass-button glass-button--light glass-button--cta instructions-modal__button"
+          type="button"
+          (click)="dismissInstructionsModal()"
+        >
+          <span class="glass-button__content">Li e estou pronto(a) para começar</span>
+        </button>
+      </section>
+    </div>
+  }
 </section>
