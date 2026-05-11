@@ -39,6 +39,7 @@ export class ParticipantEntryPage {
   genderDetail = this.participantSessionService.session().genderDetail ?? '';
   experimentVariant = this.participantSessionService.session().experimentVariant;
   isSubmitting = false;
+  attemptedSubmit = false;
   submitError = '';
 
   readonly ageRangeOptions: SelectionOption<ParticipantAgeRange>[] = [
@@ -76,10 +77,21 @@ export class ParticipantEntryPage {
     return (
       !this.isSubmitting &&
       this.name.trim().length > 0 &&
+      this.isEmailValid &&
       !!this.ageRange &&
       !!this.educationLevel &&
       !!this.gender
     );
+  }
+
+  get isEmailValid(): boolean {
+    const trimmedEmail = this.email.trim();
+
+    if (!trimmedEmail) {
+      return true;
+    }
+
+    return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(trimmedEmail);
   }
 
   get asksAcademicCourse(): boolean {
@@ -110,6 +122,26 @@ export class ParticipantEntryPage {
     return completedFields.filter(Boolean).length;
   }
 
+  get shouldShowNameError(): boolean {
+    return this.attemptedSubmit && this.name.trim().length === 0;
+  }
+
+  get shouldShowEmailError(): boolean {
+    return this.attemptedSubmit && !this.isEmailValid;
+  }
+
+  get shouldShowAgeRangeError(): boolean {
+    return this.attemptedSubmit && !this.ageRange;
+  }
+
+  get shouldShowEducationLevelError(): boolean {
+    return this.attemptedSubmit && !this.educationLevel;
+  }
+
+  get shouldShowGenderError(): boolean {
+    return this.attemptedSubmit && !this.gender;
+  }
+
   selectAgeRange(ageRange: ParticipantAgeRange): void {
     this.ageRange = ageRange;
   }
@@ -131,6 +163,13 @@ export class ParticipantEntryPage {
   }
 
   submit(): void {
+    if (this.isSubmitting) {
+      return;
+    }
+
+    this.attemptedSubmit = true;
+    this.submitError = '';
+
     if (!this.canContinue) {
       return;
     }
@@ -167,7 +206,8 @@ export class ParticipantEntryPage {
         current_occupation: trimmedProfession ? trimmedProfession : undefined,
         age_range: toApiAgeRange(ageRange),
         education_level: toApiEducationLevel(educationLevel),
-        course: this.asksAcademicCourse && trimmedAcademicCourse ? trimmedAcademicCourse : undefined,
+        course:
+          this.asksAcademicCourse && trimmedAcademicCourse ? trimmedAcademicCourse : undefined,
         gender: toApiGender(gender),
         gender_description:
           this.asksGenderDetail && trimmedGenderDetail ? trimmedGenderDetail : undefined,
@@ -179,7 +219,8 @@ export class ParticipantEntryPage {
         },
         error: () => {
           this.isSubmitting = false;
-          this.submitError = 'Nao foi possivel criar o participante. Verifique a API e tente novamente.';
+          this.submitError =
+            'Nao foi possivel criar o participante. Verifique a API e tente novamente.';
         },
         complete: () => {
           this.isSubmitting = false;

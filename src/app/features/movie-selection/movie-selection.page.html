@@ -39,12 +39,22 @@
           <button
             class="glass-button glass-button--light glass-button--cta movie-selection-preview__continue-button"
             type="button"
+            [class.is-loading]="isSavingFavorites()"
+            [attr.aria-busy]="isSavingFavorites()"
             (click)="continueToLoading()"
           >
             <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
-              <i class="pi pi-arrow-right"></i>
+              <i
+                [class]="
+                  isSavingFavorites()
+                    ? 'pi pi-spinner movie-selection-preview__loading-icon'
+                    : 'pi pi-arrow-right'
+                "
+              ></i>
             </span>
-            <span class="glass-button__content">Continuar</span>
+            <span class="glass-button__content">
+              {{ isSavingFavorites() ? 'Carregando...' : 'Continuar' }}
+            </span>
           </button>
         </div>
       </div>
@@ -171,6 +181,25 @@
 
     <div class="movie-selection-preview__content">
       <div class="movie-selection-preview__main">
+        <div class="movie-selection-preview__ordering-row">
+          <span class="ordering-label" id="movie-ordering-label">
+            <i class="pi pi-sort-alt ordering-label__icon" aria-hidden="true"></i>
+            <span>Ordenar por</span>
+          </span>
+
+          <label class="ordering-shell glass-surface" aria-label="Ordenar filmes">
+            <select
+              aria-labelledby="movie-ordering-label"
+              [value]="activeMovieOrdering()"
+              (change)="updateMovieOrdering(($any($event.target).value ?? '').toString())"
+            >
+              @for (option of movieOrderingOptions; track option.id) {
+                <option [value]="option.id">{{ option.label }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
         <div class="movie-grid">
           @if (hasNoResults()) {
             <div class="movie-grid__empty glass-surface">
@@ -378,6 +407,40 @@
               </button>
             </article>
           }
+        </div>
+
+        <div class="selection-drawer__footer">
+          <button
+            class="glass-button glass-button--light movie-selection-preview__continue-button selection-drawer__clear-button"
+            type="button"
+            (click)="clearSelectedMovies()"
+          >
+            <span class="glass-button__icon" aria-hidden="true">
+              <i class="pi pi-trash"></i>
+            </span>
+            <span class="glass-button__content">Limpar seleção</span>
+          </button>
+
+          <button
+            class="glass-button glass-button--light glass-button--cta movie-selection-preview__continue-button selection-drawer__continue-button"
+            type="button"
+            [class.is-loading]="isSavingFavorites()"
+            [attr.aria-busy]="isSavingFavorites()"
+            (click)="continueToLoading()"
+          >
+            <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
+              <i
+                [class]="
+                  isSavingFavorites()
+                    ? 'pi pi-spinner movie-selection-preview__loading-icon'
+                    : 'pi pi-arrow-right'
+                "
+              ></i>
+            </span>
+            <span class="glass-button__content">
+              {{ isSavingFavorites() ? 'Carregando...' : 'Continuar' }}
+            </span>
+          </button>
         </div>
       </aside>
     </div>

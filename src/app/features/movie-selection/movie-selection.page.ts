@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { MovieApiService } from '../../core/api/movie-api.service';
+import { MovieApiService, MovieOrdering } from '../../core/api/movie-api.service';
 import { RecommendationApiService } from '../../core/api/recommendation-api.service';
 import { Movie } from '../../core/models/movie';
 import { ParticipantSessionService } from '../../core/services/participant-session.service';
@@ -36,9 +36,15 @@ interface MovieSelectionCard {
   ratingLabel: string;
 }
 
+interface MovieOrderingOption {
+  id: MovieOrdering;
+  label: string;
+}
+
 const MAX_SELECTED_MOVIES = 5;
 const MOVIE_SELECTION_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
+const DEFAULT_MOVIE_ORDERING: MovieOrdering = 'recentes_popularidade';
 const ALL_GENRES_ID: GenreFilterId = 'all';
 const GENRE_EDGE_HOVER_THRESHOLD = 96;
 const GENRE_DRAG_THRESHOLD = 6;
@@ -126,6 +132,10 @@ const GENRE_OPTIONS: GenreFilterOption[] = [
     iconClass: getGenreIconClass(genre),
   })),
 ];
+const MOVIE_ORDERING_OPTIONS: MovieOrderingOption[] = [
+  { id: 'recentes_popularidade', label: 'Mais recentes' },
+  { id: 'popularidade_recentes', label: 'Mais populares' },
+];
 
 function getGenreLabel(genre: string): string {
   return GENRE_LABELS[genre] ?? genre;
@@ -195,14 +205,17 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
   private genreDragStartX = 0;
   private genreDragStartScrollLeft = 0;
   private shouldSuppressGenreClick = false;
+  private readonly selectedMovieHydrationRequests = new Set<number>();
 
   readonly selectionSteps = [1, 2, 3, 4, 5];
   readonly maxSelectedMovies = MAX_SELECTED_MOVIES;
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
+  readonly movieOrderingOptions = MOVIE_ORDERING_OPTIONS;
   readonly genreOptions = GENRE_OPTIONS;
   readonly session = this.participantSessionService.session;
   readonly selectionLimitHint = SELECTION_LIMIT_HINT;
   readonly searchQuery = signal('');
+  readonly activeMovieOrdering = signal<MovieOrdering>(DEFAULT_MOVIE_ORDERING);
   readonly activeGenreId = signal<GenreFilterId>(ALL_GENRES_ID);
   readonly expandedMovieId = signal<number | null>(null);
   readonly expandedMovieRowStart = signal(0);
@@ -221,6 +234,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
   readonly movieCache = signal<Map<number, MovieSelectionCard>>(new Map());
   readonly movieTotal = signal(0);
   readonly isLoadingMovies = signal(false);
+  readonly isSavingFavorites = signal(false);
   readonly apiError = signal('');
 
   readonly selectedMovieIds = computed(() =>
@@ -272,7 +286,9 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
       .map((movieId) => this.movieCache().get(movieId))
       .filter((card): card is MovieSelectionCard => Boolean(card)),
   );
-  readonly hasNoResults = computed(() => !this.isLoadingMovies() && this.filteredCards().length === 0);
+  readonly hasNoResults = computed(
+    () => !this.isLoadingMovies() && this.filteredCards().length === 0,
+  );
   readonly emptyStateMessage = computed(() => {
     if (this.apiError()) {
       return this.apiError();
@@ -357,6 +373,17 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     }
 
     this.selectGenre(genreId);
+  }
+
+  updateMovieOrdering(ordering: string): void {
+    if (!this.isMovieOrdering(ordering) || ordering === this.activeMovieOrdering()) {
+      return;
+    }
+
+    this.activeMovieOrdering.set(ordering);
+    this.resetMoviePagination();
+    this.showSelectionLimitHint.set(false);
+    this.loadMovies();
   }
 
   updateGenreScrollState(): void {
@@ -521,6 +548,15 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     );
   }
 
+  clearSelectedMovies(): void {
+    if (this.selectedCount() === 0) {
+      return;
+    }
+
+    this.updateSelectedMovieIds([]);
+    this.showContinueRequirementAlert.set(false);
+  }
+
   toggleMovieDetails(movieId: number, event?: Event): void {
     event?.preventDefault();
     event?.stopPropagation();
@@ -570,6 +606,10 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
   }
 
   continueToLoading(): void {
+    if (this.isSavingFavorites()) {
+      return;
+    }
+
     if (!this.canContinue()) {
       this.showContinueRequirementAlert.set(true);
       this.showSelectionLimitHint.set(false);
@@ -658,6 +698,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
         size: this.moviePageSize(),
         titulo: this.searchQuery().trim() || undefined,
         genero: this.activeGenreId() === ALL_GENRES_ID ? undefined : this.activeGenreId(),
+        ordenacao: this.activeMovieOrdering(),
       })
       .subscribe({
         next: (page) => {
@@ -675,6 +716,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
             cards.forEach((card) => nextCache.set(card.movie.id, card));
             return nextCache;
           });
+          this.hydrateMissingSelectedCards();
           this.scheduleGenreScrollStateUpdate();
         },
         error: () => {
@@ -694,11 +736,19 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
       return;
     }
 
-    this.recommendationApiService.saveFavoriteMovies(backendUserId, this.selectedMovieIds()).subscribe({
-      next: () => void this.router.navigateByUrl('/loading'),
-      error: () =>
-        this.apiError.set('Nao foi possivel salvar os filmes favoritos. Tente novamente.'),
-    });
+    this.isSavingFavorites.set(true);
+    this.apiError.set('');
+
+    this.recommendationApiService
+      .saveFavoriteMovies(backendUserId, this.selectedMovieIds())
+      .subscribe({
+        next: () => void this.router.navigateByUrl('/loading'),
+        error: () => {
+          this.isSavingFavorites.set(false);
+          this.apiError.set('Nao foi possivel salvar os filmes favoritos. Tente novamente.');
+        },
+        complete: () => this.isSavingFavorites.set(false),
+      });
   }
 
   private updateSelectedMovieIds(ids: number[]): void {
@@ -710,6 +760,39 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     if (normalizedIds.length === this.maxSelectedMovies) {
       this.showContinueRequirementAlert.set(false);
     }
+
+    this.hydrateMissingSelectedCards();
+  }
+
+  private hydrateMissingSelectedCards(): void {
+    const cache = this.movieCache();
+
+    this.selectedMovieIds()
+      .filter((movieId) => !cache.has(movieId) && !this.selectedMovieHydrationRequests.has(movieId))
+      .forEach((movieId) => {
+        this.selectedMovieHydrationRequests.add(movieId);
+
+        this.movieApiService.getMovie(movieId).subscribe({
+          next: (movie) => {
+            this.movieCache.update((currentCache) => {
+              if (currentCache.has(movie.id)) {
+                return currentCache;
+              }
+
+              const nextCache = new Map(currentCache);
+              const selectedIndex = Math.max(0, this.selectedMovieIds().indexOf(movie.id));
+              nextCache.set(movie.id, createMovieSelectionCard(movie, selectedIndex));
+              return nextCache;
+            });
+          },
+          error: () => this.selectedMovieHydrationRequests.delete(movieId),
+          complete: () => this.selectedMovieHydrationRequests.delete(movieId),
+        });
+      });
+  }
+
+  private isMovieOrdering(ordering: string): ordering is MovieOrdering {
+    return MOVIE_ORDERING_OPTIONS.some((option) => option.id === ordering);
   }
 
   private resetMoviePagination(): void {

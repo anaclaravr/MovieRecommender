@@ -80,14 +80,18 @@
   opacity: 0.9;
 }
 
-.participant-entry-page__continue-button:disabled {
-  opacity: 0.52;
-  cursor: not-allowed;
+.participant-entry-page__continue-button.is-loading {
+  cursor: progress;
 }
 
-.participant-entry-page__continue-button:disabled:hover {
-  transform: none;
-  background: var(--glass-button-background);
+.participant-entry-page__loading-icon {
+  animation: participant-entry-spin 760ms linear infinite;
+}
+
+@keyframes participant-entry-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .participant-entry-hero {
@@ -286,6 +290,14 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.78);
 }
 
+.input-shell.has-error {
+  border-color: rgba(185, 129, 18, 0.38);
+  box-shadow:
+    0 0 0 3px rgba(185, 129, 18, 0.08),
+    var(--shadow-1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+}
+
 .input-shell__icon {
   flex: 0 0 auto;
   color: var(--color-text-muted);
@@ -309,6 +321,18 @@
 .radio-field {
   padding: 0;
   border: 0;
+}
+
+.radio-field.has-error .radio-option {
+  border-color: rgba(185, 129, 18, 0.28);
+}
+
+.field__error {
+  margin: -0.18rem 0 0;
+  color: var(--color-warning-strong);
+  font-size: 0.82rem;
+  line-height: 1.35;
+  font-weight: var(--font-weight-medium);
 }
 
 .radio-field legend {

@@ -66,9 +66,10 @@
   width: 100%;
   min-height: 3.55rem;
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: minmax(0, 21.25rem);
   align-items: center;
   justify-items: center;
+  justify-content: center;
   min-width: 0;
 }
 
@@ -138,6 +139,79 @@
 }
 
 .search-shell:focus-within {
+  border-color: rgba(163, 69, 164, 0.22);
+  box-shadow:
+    var(--state-focus-ring),
+    var(--shadow-2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.movie-selection-preview__ordering-row {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.7rem;
+  min-width: 0;
+}
+
+.ordering-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+  color: var(--color-text-muted);
+  font-size: 0.86rem;
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+.ordering-label__icon {
+  font-size: 0.98rem;
+  line-height: 1;
+  color: currentColor;
+}
+
+.ordering-shell {
+  width: min(100%, 13.25rem);
+  min-height: 3rem;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  padding-inline: 1rem 0.85rem;
+  border-width: 1.6px;
+  border-color: rgba(255, 255, 255, 0.98);
+  border-radius: var(--radius-search);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.18),
+    var(--shadow-1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  transition:
+    box-shadow 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.ordering-shell select {
+  min-width: 0;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+  cursor: pointer;
+}
+
+.ordering-shell:hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.22),
+    var(--shadow-2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.78);
+}
+
+.ordering-shell:focus-within {
   border-color: rgba(163, 69, 164, 0.22);
   box-shadow:
     var(--state-focus-ring),
@@ -428,6 +502,10 @@
   min-height: 3.3rem;
 }
 
+.movie-selection-preview.is-drawer-open .ordering-shell {
+  width: min(100%, 12.75rem);
+}
+
 .movie-selection-preview.is-drawer-open .selection-step {
   width: 2.62rem;
   height: 2.58rem;
@@ -592,7 +670,7 @@
   position: absolute;
   top: 0.7rem;
   left: 0.7rem;
-  z-index: 1;
+  z-index: 4;
   --glass-button-radius: var(--radius-pill);
   letter-spacing: 0.01em;
   --glass-button-border-active: rgba(255, 255, 255, 0.3);
@@ -655,7 +733,7 @@
   position: absolute;
   top: 0.7rem;
   right: 0.7rem;
-  z-index: 1;
+  z-index: 4;
   width: 2.1rem;
   height: 2.1rem;
   display: inline-flex;
@@ -674,10 +752,11 @@
 .poster-card-shell__hero-copy {
   position: absolute;
   inset: auto auto 1.35rem 1.35rem;
-  z-index: 1;
+  z-index: 2;
   display: grid;
   gap: 0.35rem;
   max-width: min(100%, 28rem);
+  pointer-events: none;
 }
 
 .poster-card-shell__art-copy {
@@ -714,12 +793,17 @@
 }
 
 .poster-card-shell__hero-title {
+  display: -webkit-box;
+  overflow: hidden;
   color: #fff;
   font-size: clamp(2.1rem, 4vw, 3.3rem);
   line-height: 0.95;
   font-weight: 700;
   letter-spacing: -0.06em;
   text-shadow: 0 14px 36px rgba(0, 0, 0, 0.34);
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .poster-card-shell__meta h2,
@@ -803,6 +887,13 @@
 .poster-card-shell.is-details-expanded .poster-card-shell__selected-badge {
   top: 0.9rem;
   right: 0.9rem;
+}
+
+.poster-card-shell.is-details-expanded .poster-card-shell__hero-copy {
+  inset: 4.65rem 1.35rem 1.35rem 1.35rem;
+  align-content: end;
+  max-width: min(calc(100% - 2.7rem), 42rem);
+  overflow: hidden;
 }
 
 .poster-card-shell.is-selected .poster-card-shell__selected-badge {
@@ -892,6 +983,20 @@
   font-size: 0.9rem;
 }
 
+.movie-selection-preview__continue-button.is-loading {
+  cursor: progress;
+}
+
+.movie-selection-preview__loading-icon {
+  animation: movie-selection-spin 760ms linear infinite;
+}
+
+@keyframes movie-selection-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .selection-drawer-trigger {
   position: fixed;
   right: 0.95rem;
@@ -958,7 +1063,7 @@
   min-width: 0;
   padding: 1rem 0.82rem 0.82rem;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.6rem;
   align-content: start;
   overflow: hidden;
@@ -1052,8 +1157,74 @@
   align-content: start;
   gap: 0.42rem;
   min-height: 0;
-  overflow: auto;
-  padding-right: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.18rem;
+  scrollbar-color: transparent transparent;
+  scrollbar-width: thin;
+  transition: scrollbar-color 160ms ease;
+}
+
+.selection-drawer__list:hover,
+.selection-drawer__list:focus-within {
+  scrollbar-color: rgba(163, 69, 164, 0.38) transparent;
+}
+
+.selection-drawer__list::-webkit-scrollbar {
+  width: 0.52rem;
+}
+
+.selection-drawer__list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.selection-drawer__list::-webkit-scrollbar-thumb {
+  border: 0.16rem solid transparent;
+  border-radius: 999px;
+  background-color: transparent;
+  background-clip: content-box;
+}
+
+.selection-drawer__list:hover::-webkit-scrollbar-thumb,
+.selection-drawer__list:focus-within::-webkit-scrollbar-thumb {
+  background-color: rgba(163, 69, 164, 0.36);
+}
+
+.selection-drawer__list:hover::-webkit-scrollbar-thumb:hover,
+.selection-drawer__list:focus-within::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(108, 47, 119, 0.58);
+}
+
+.selection-drawer__footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex-wrap: nowrap;
+  gap: 0.52rem;
+  padding: 0.3rem 0.05rem 0;
+  margin-left: auto;
+}
+
+.selection-drawer__continue-button,
+.selection-drawer__clear-button {
+  justify-content: center;
+  white-space: nowrap;
+}
+
+.selection-drawer__clear-button {
+  --glass-button-padding-inline: 0.9rem;
+  --glass-button-background: rgba(255, 255, 255, 0.56);
+  --glass-button-background-hover: rgba(226, 234, 239, 0.82);
+  --glass-button-border: rgba(84, 98, 108, 0.14);
+  --glass-button-color: var(--color-text-muted);
+  --glass-button-shadow: 0 8px 18px rgba(55, 62, 67, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.76);
+  --glass-button-shadow-hover:
+    0 10px 20px rgba(55, 62, 67, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.82);
+}
+
+.selection-drawer__clear-button .glass-button__icon {
+  font-size: 0.9rem;
 }
 
 .selection-drawer__item {
@@ -1269,6 +1440,15 @@
     width: 100%;
   }
 
+  .movie-selection-preview__ordering-row {
+    justify-content: flex-end;
+    gap: 0.58rem;
+  }
+
+  .ordering-shell {
+    width: min(100%, 12.75rem);
+  }
+
   .selection-step {
     width: 2.85rem;
     height: 2.8rem;
@@ -1296,6 +1476,11 @@
 
   .poster-card-shell__hero-copy {
     inset: auto 1rem 1rem 1rem;
+    max-width: none;
+  }
+
+  .poster-card-shell.is-details-expanded .poster-card-shell__hero-copy {
+    inset: 4.35rem 1rem 1rem 1rem;
     max-width: none;
   }
 
