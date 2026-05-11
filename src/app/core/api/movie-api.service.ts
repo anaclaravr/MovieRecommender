@@ -6,11 +6,14 @@ import { Movie } from '../models/movie';
 import { API_BASE_URL } from './api.config';
 import { ApiMovie, ApiPage } from './api-types';
 
+export type MovieOrdering = 'recentes_popularidade' | 'popularidade_recentes';
+
 export interface MovieListParams {
   page: number;
   size: number;
   titulo?: string;
   genero?: string;
+  ordenacao?: MovieOrdering;
 }
 
 export interface MoviePage {
@@ -34,6 +37,10 @@ export class MovieApiService {
 
     if (params.genero && params.genero !== 'all') {
       httpParams = httpParams.set('genero', params.genero);
+    }
+
+    if (params.ordenacao) {
+      httpParams = httpParams.set('ordenacao', params.ordenacao);
     }
 
     return this.http
@@ -74,4 +81,3 @@ function toOptionalNumber(value: number | string | null | undefined): number | u
 
   return Number.isFinite(parsed) ? parsed : undefined;
 }
-

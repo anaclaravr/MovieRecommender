@@ -117,6 +117,20 @@ describe('MovieSelectionPage', () => {
     expect(component.isDetailsExpanded(targetMovieId)).toBe(false);
   });
 
+  it('resets pagination and reloads movies when changing ordering', () => {
+    component.goToNextMoviePage();
+    flushMovies(MOCK_MOVIES, 'recentes_popularidade', 2);
+    expect(component.currentMoviePageIndex()).toBe(1);
+
+    component.toggleMovieDetails(MOCK_MOVIES[0].id);
+    component.updateMovieOrdering('popularidade_recentes');
+    flushMovies(MOCK_MOVIES, 'popularidade_recentes', 1);
+
+    expect(component.currentMoviePageIndex()).toBe(0);
+    expect(component.isDetailsExpanded(MOCK_MOVIES[0].id)).toBe(false);
+    expect(component.activeMovieOrdering()).toBe('popularidade_recentes');
+  });
+
   it('keeps a second-row movie on the second row when switching expanded details', () => {
     component.viewportWidth.set(1440);
 
@@ -143,8 +157,15 @@ describe('MovieSelectionPage', () => {
     ]);
   });
 
-  function flushMovies(movies: typeof MOCK_MOVIES): void {
+  function flushMovies(
+    movies: typeof MOCK_MOVIES,
+    expectedOrdering = 'recentes_popularidade',
+    expectedPage = 1,
+  ): void {
     const request = httpMock.expectOne((req) => req.url.endsWith('/filmes/'));
+
+    expect(request.request.params.get('ordenacao')).toBe(expectedOrdering);
+    expect(request.request.params.get('page')).toBe(expectedPage.toString());
 
     request.flush({
       items: movies.map((movie) => ({
@@ -163,7 +184,7 @@ describe('MovieSelectionPage', () => {
         synopsis: movie.synopsis ?? null,
       })),
       total: movies.length,
-      page: 1,
+      page: expectedPage,
       size: 10,
       pages: 1,
     });

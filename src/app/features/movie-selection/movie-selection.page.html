@@ -61,6 +61,19 @@
             (input)="updateSearchQuery(($any($event.target).value ?? '').toString())"
           />
         </label>
+
+        <label class="ordering-shell glass-surface" aria-label="Ordenar por">
+          <i class="pi pi-sort-alt ordering-shell__icon" aria-hidden="true"></i>
+          <span>Ordenar por</span>
+          <select
+            [value]="activeMovieOrdering()"
+            (change)="updateMovieOrdering(($any($event.target).value ?? '').toString())"
+          >
+            @for (option of movieOrderingOptions; track option.id) {
+              <option [value]="option.id">{{ option.label }}</option>
+            }
+          </select>
+        </label>
       </div>
 
       <div class="movie-selection-preview__title-block">

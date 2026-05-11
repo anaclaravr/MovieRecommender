@@ -70,6 +70,8 @@ describe('NeutralExperiencePage', () => {
   function flushMovies(movies: typeof MOCK_MOVIES): void {
     const request = httpMock.expectOne((req) => req.url.endsWith('/filmes/'));
 
+    expect(request.request.params.has('ordenacao')).toBe(false);
+
     request.flush({
       items: movies.map((movie) => ({
         id: movie.id,
