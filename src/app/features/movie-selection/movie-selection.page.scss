@@ -958,7 +958,7 @@
   min-width: 0;
   padding: 1rem 0.82rem 0.82rem;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr) auto;
   gap: 0.6rem;
   align-content: start;
   overflow: hidden;
@@ -1054,6 +1054,15 @@
   min-height: 0;
   overflow: auto;
   padding-right: 0;
+}
+
+.selection-drawer__footer {
+  padding: 0.2rem 0.05rem 0;
+}
+
+.selection-drawer__continue-button {
+  width: 100%;
+  justify-content: center;
 }
 
 .selection-drawer__item {

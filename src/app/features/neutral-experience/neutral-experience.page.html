@@ -363,6 +363,19 @@
             <p class="neutral-experience-page__drawer-empty">Nenhum filme marcado.</p>
           }
         </div>
+
+        <div class="selection-drawer__footer">
+          <button
+            class="glass-button glass-button--light glass-button--cta movie-selection-preview__continue-button selection-drawer__continue-button"
+            type="button"
+            (click)="finishExperience()"
+          >
+            <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
+              <i class="pi pi-check"></i>
+            </span>
+            <span class="glass-button__content">Finalizar</span>
+          </button>
+        </div>
       </aside>
     </div>
   </div>
