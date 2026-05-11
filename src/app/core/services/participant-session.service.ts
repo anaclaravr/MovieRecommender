@@ -79,10 +79,11 @@ function normalizeParticipantSession(value: unknown): ParticipantSession | null 
   if (
     typeof session.name !== 'string' ||
     !Array.isArray(session.selectedSeedMovieIds) ||
-    !session.selectedSeedMovieIds.every((id) => typeof id === 'string') ||
+    !session.selectedSeedMovieIds.every((id) => typeof id === 'number') ||
     (session.selectedNeutralMovieIds !== undefined &&
       (!Array.isArray(session.selectedNeutralMovieIds) ||
-        !session.selectedNeutralMovieIds.every((id) => typeof id === 'string'))) ||
+        !session.selectedNeutralMovieIds.every((id) => typeof id === 'number'))) ||
+    (session.backendUserId !== undefined && typeof session.backendUserId !== 'number') ||
     (session.email !== undefined && typeof session.email !== 'string') ||
     (session.ageRange !== undefined && !AGE_RANGES.includes(session.ageRange)) ||
     (session.profession !== undefined && typeof session.profession !== 'string') ||
@@ -105,6 +106,7 @@ function normalizeParticipantSession(value: unknown): ParticipantSession | null 
       typeof session.participantId === 'string' && session.participantId.trim().length > 0
         ? session.participantId
         : createTrackingId('participant'),
+    backendUserId: session.backendUserId,
     name: session.name,
     email: session.email,
     ageRange: session.ageRange,
@@ -184,14 +186,21 @@ export class ParticipantSessionService {
     }));
   }
 
-  setSelectedSeedMovieIds(ids: string[]): void {
+  setBackendUserId(backendUserId: number): void {
+    this.updateSession((session) => ({
+      ...session,
+      backendUserId,
+    }));
+  }
+
+  setSelectedSeedMovieIds(ids: number[]): void {
     this.updateSession((session) => ({
       ...session,
       selectedSeedMovieIds: [...ids],
     }));
   }
 
-  setSelectedNeutralMovieIds(ids: string[]): void {
+  setSelectedNeutralMovieIds(ids: number[]): void {
     this.updateSession((session) => ({
       ...session,
       selectedNeutralMovieIds: Array.from(new Set(ids)),

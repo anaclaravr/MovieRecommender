@@ -1,4 +1,6 @@
 import { TestBed } from '@angular/core/testing';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
 
 import { MOCK_MOVIES } from '../../core/mock-data/movies.mock';
@@ -8,28 +10,38 @@ import { MovieSelectionPage } from './movie-selection.page';
 describe('MovieSelectionPage', () => {
   let component: MovieSelectionPage;
   let participantSessionService: ParticipantSessionService;
+  let httpMock: HttpTestingController;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [MovieSelectionPage],
-      providers: [provideRouter([])],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     participantSessionService = TestBed.inject(ParticipantSessionService);
     participantSessionService.reset();
+    httpMock = TestBed.inject(HttpTestingController);
 
     const fixture = TestBed.createComponent(MovieSelectionPage);
     component = fixture.componentInstance;
     fixture.detectChanges();
+    flushMovies(MOCK_MOVIES);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   it('filters movies by title and genre', () => {
     component.updateSearchQuery('inter');
+    flushMovies([MOCK_MOVIES[6]]);
 
-    expect(component.filteredCards().map((card) => card.movie.id)).toEqual(['interstellar']);
+    expect(component.filteredCards().map((card) => card.movie.id)).toEqual([MOCK_MOVIES[6].id]);
 
     component.updateSearchQuery('');
+    flushMovies(MOCK_MOVIES);
     component.selectGenre('Adventure');
+    flushMovies(MOCK_MOVIES.filter((movie) => movie.genres.includes('Adventure')));
 
     expect(component.filteredCards().length).toBeGreaterThan(0);
     expect(component.filteredCards().every((card) => card.movie.genres.includes('Adventure'))).toBe(
@@ -130,4 +142,30 @@ describe('MovieSelectionPage', () => {
       MOCK_MOVIES[5].id,
     ]);
   });
+
+  function flushMovies(movies: typeof MOCK_MOVIES): void {
+    const request = httpMock.expectOne((req) => req.url.endsWith('/filmes/'));
+
+    request.flush({
+      items: movies.map((movie) => ({
+        id: movie.id,
+        movie_id: movie.movieId,
+        tmdb_id: movie.tmdbId ?? null,
+        title: movie.originalTitle ?? movie.title,
+        title_translation: movie.titleTranslation ?? null,
+        year: movie.year ?? null,
+        genres: movie.genres,
+        poster_url: movie.posterUrl ?? null,
+        average_rating: movie.averageRating ?? null,
+        rating_count: movie.ratingCount,
+        popularity: movie.popularity ?? null,
+        runtime: movie.runtime ?? null,
+        synopsis: movie.synopsis ?? null,
+      })),
+      total: movies.length,
+      page: 1,
+      size: 10,
+      pages: 1,
+    });
+  }
 });

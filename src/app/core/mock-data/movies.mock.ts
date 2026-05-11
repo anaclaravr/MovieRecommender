@@ -2,111 +2,159 @@ import { Movie } from '../models/movie';
 
 export const MOCK_MOVIES: Movie[] = [
   {
-    id: 'arrival',
+    id: 1,
+    movieId: 1,
     title: 'Arrival',
     year: 2016,
-    genres: ['Science Fiction', 'Drama'],
+    genres: ['Sci-Fi', 'Drama'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Arrival',
+    averageRating: 7.9,
+    ratingCount: 1000,
+    runtime: 116,
     synopsis:
-      'A linguist is recruited to communicate with mysterious visitors whose arrival unsettles the entire world.'
+      'A linguist is recruited to communicate with mysterious visitors whose arrival unsettles the entire world.',
   },
   {
-    id: 'before-sunrise',
+    id: 2,
+    movieId: 2,
     title: 'Before Sunrise',
     year: 1995,
     genres: ['Romance', 'Drama'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Before+Sunrise',
+    averageRating: 8.1,
+    ratingCount: 1000,
+    runtime: 101,
     synopsis:
-      'Two strangers meet on a train and spend one unforgettable night walking and talking through Vienna.'
+      'Two strangers meet on a train and spend one unforgettable night walking and talking through Vienna.',
   },
   {
-    id: 'blade-runner-2049',
+    id: 3,
+    movieId: 3,
     title: 'Blade Runner 2049',
     year: 2017,
-    genres: ['Science Fiction', 'Thriller'],
+    genres: ['Sci-Fi', 'Thriller'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Blade+Runner+2049',
+    averageRating: 8,
+    ratingCount: 1000,
+    runtime: 164,
     synopsis:
-      'A new blade runner uncovers a secret that could reshape what remains of a divided future society.'
+      'A new blade runner uncovers a secret that could reshape what remains of a divided future society.',
   },
   {
-    id: 'coco',
+    id: 4,
+    movieId: 4,
     title: 'Coco',
     year: 2017,
-    genres: ['Animation', 'Adventure', 'Family'],
+    genres: ['Animation', 'Adventure', 'Children'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Coco',
+    averageRating: 8.4,
+    ratingCount: 1000,
+    runtime: 105,
     synopsis:
-      'A young musician enters the Land of the Dead and discovers the family story behind his love of music.'
+      'A young musician enters the Land of the Dead and discovers the family story behind his love of music.',
   },
   {
-    id: 'dune-part-one',
+    id: 5,
+    movieId: 5,
     title: 'Dune',
     year: 2021,
-    genres: ['Science Fiction', 'Adventure'],
+    genres: ['Sci-Fi', 'Adventure'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Dune',
+    averageRating: 8,
+    ratingCount: 1000,
+    runtime: 155,
     synopsis:
-      'A gifted heir is drawn into the dangerous politics of a desert planet that holds the universe most valuable resource.'
+      'A gifted heir is drawn into the dangerous politics of a desert planet that holds the universe most valuable resource.',
   },
   {
-    id: 'get-out',
+    id: 6,
+    movieId: 6,
     title: 'Get Out',
     year: 2017,
     genres: ['Horror', 'Mystery', 'Thriller'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Get+Out',
+    averageRating: 7.8,
+    ratingCount: 1000,
+    runtime: 104,
     synopsis:
-      'A weekend visit to meet a girlfriend family becomes increasingly unsettling as hidden intentions emerge.'
+      'A weekend visit to meet a girlfriend family becomes increasingly unsettling as hidden intentions emerge.',
   },
   {
-    id: 'interstellar',
+    id: 7,
+    movieId: 7,
     title: 'Interstellar',
     year: 2014,
-    genres: ['Science Fiction', 'Drama', 'Adventure'],
+    genres: ['Sci-Fi', 'Drama', 'Adventure'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Interstellar',
+    averageRating: 8.7,
+    ratingCount: 1000,
+    runtime: 169,
     synopsis:
-      'A former pilot joins a mission through space and time to search for a future beyond a dying Earth.'
+      'A former pilot joins a mission through space and time to search for a future beyond a dying Earth.',
   },
   {
-    id: 'lady-bird',
+    id: 8,
+    movieId: 8,
     title: 'Lady Bird',
     year: 2017,
     genres: ['Comedy', 'Drama'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Lady+Bird',
+    averageRating: 7.4,
+    ratingCount: 1000,
+    runtime: 94,
     synopsis:
-      'A teenager navigates identity, ambition, and family tensions during her final year of high school.'
+      'A teenager navigates identity, ambition, and family tensions during her final year of high school.',
   },
   {
-    id: 'little-miss-sunshine',
+    id: 9,
+    movieId: 9,
     title: 'Little Miss Sunshine',
     year: 2006,
     genres: ['Comedy', 'Drama'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Little+Miss+Sunshine',
+    averageRating: 7.8,
+    ratingCount: 1000,
+    runtime: 101,
     synopsis:
-      'A chaotic family road trip turns into a heartfelt journey as they rally around a child beauty pageant dream.'
+      'A chaotic family road trip turns into a heartfelt journey as they rally around a child beauty pageant dream.',
   },
   {
-    id: 'mad-max-fury-road',
+    id: 10,
+    movieId: 10,
     title: 'Mad Max: Fury Road',
     year: 2015,
     genres: ['Action', 'Adventure'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Mad+Max',
+    averageRating: 8.1,
+    ratingCount: 1000,
+    runtime: 120,
     synopsis:
-      'Two fugitives race across a brutal wasteland in a high-speed rebellion against a tyrannical warlord.'
+      'Two fugitives race across a brutal wasteland in a high-speed rebellion against a tyrannical warlord.',
   },
   {
-    id: 'parasite',
+    id: 11,
+    movieId: 11,
     title: 'Parasite',
     year: 2019,
     genres: ['Thriller', 'Drama'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Parasite',
+    averageRating: 8.5,
+    ratingCount: 1000,
+    runtime: 132,
     synopsis:
-      'A struggling family schemes their way into a wealthy household where class tension slowly turns volatile.'
+      'A struggling family schemes their way into a wealthy household where class tension slowly turns volatile.',
   },
   {
-    id: 'spider-verse',
+    id: 12,
+    movieId: 12,
     title: 'Spider-Man: Into the Spider-Verse',
     year: 2018,
     genres: ['Animation', 'Action', 'Adventure'],
     posterUrl: 'https://placehold.co/320x480/e8eef5/102542?text=Spider-Verse',
+    averageRating: 8.4,
+    ratingCount: 1000,
+    runtime: 117,
     synopsis:
-      'Miles Morales discovers a multiverse of Spider-People and learns what it means to become a hero.'
-  }
+      'Miles Morales discovers a multiverse of Spider-People and learns what it means to become a hero.',
+  },
 ];

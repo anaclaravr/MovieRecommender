@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { Injectable, inject, signal } from '@angular/core';
 
+import { EventApiService } from '../api/event-api.service';
 import {
   ExperienceCompletedPayload,
   ExperienceTrackingContext,
@@ -58,6 +59,7 @@ function persistEvents(events: ExperienceTrackingEvent[]): void {
 
 @Injectable({ providedIn: 'root' })
 export class ExperienceTrackingService {
+  private readonly eventApiService = inject(EventApiService);
   private readonly eventsState = signal<ExperienceTrackingEvent[]>(readStoredEvents());
 
   readonly events = this.eventsState.asReadonly();
@@ -65,7 +67,7 @@ export class ExperienceTrackingService {
   createContext(session: ParticipantSession): ExperienceTrackingContext {
     return {
       session_id: session.sessionId,
-      participant_id: session.participantId,
+      participant_id: session.backendUserId?.toString() ?? session.participantId,
       experiment_variant: session.experimentVariant,
     };
   }
@@ -149,9 +151,31 @@ export class ExperienceTrackingService {
   }
 
   private appendEvent(event: ExperienceTrackingEvent): void {
+    this.persistFallbackEvent(event);
+
+    const backendUserId = Number(event.payload.participant_id);
+
+    if (!Number.isFinite(backendUserId)) {
+      return;
+    }
+
+    this.eventApiService
+      .createEvent({
+        session_id: event.payload.session_id,
+        user_id: backendUserId,
+        experiment_variant: event.payload.experiment_variant,
+        event_name: event.name,
+        event_timestamp: eventTimestamp(event),
+        payload: { ...event.payload },
+      })
+      .subscribe({
+        error: () => undefined,
+      });
+  }
+
+  private persistFallbackEvent(event: ExperienceTrackingEvent): void {
     this.eventsState.update((events) => {
       const nextEvents = [...events, event];
-
       persistEvents(nextEvents);
 
       return nextEvents;
@@ -209,5 +233,17 @@ export class ExperienceTrackingService {
       payload.participant_id === context.participant_id &&
       payload.experiment_variant === context.experiment_variant
     );
+  }
+}
+
+function eventTimestamp(event: ExperienceTrackingEvent): string {
+  switch (event.name) {
+    case 'experience_started':
+      return event.payload.started_at;
+    case 'resource_used':
+    case 'movie_selected':
+      return event.payload.timestamp;
+    case 'experience_completed':
+      return event.payload.completed_at;
   }
 }

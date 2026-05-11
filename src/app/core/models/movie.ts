@@ -1,8 +1,16 @@
 export interface Movie {
-  id: string;
+  id: number;
+  movieId: number;
+  tmdbId?: number;
   title: string;
-  year: number;
+  originalTitle?: string;
+  titleTranslation?: string;
+  year?: number;
   genres: string[];
-  posterUrl: string;
-  synopsis: string;
+  posterUrl?: string;
+  averageRating?: number;
+  ratingCount: number;
+  popularity?: number;
+  runtime?: number;
+  synopsis?: string;
 }

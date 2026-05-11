@@ -8,8 +8,10 @@ import {
   signal,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { forkJoin } from 'rxjs';
 
-import { MOCK_MOVIES } from '../../core/mock-data/movies.mock';
+import { RecommendationApiService } from '../../core/api/recommendation-api.service';
+import { MovieApiService } from '../../core/api/movie-api.service';
 import {
   PersuasiveStimulusType,
   SelectedStimulusSummary,
@@ -33,7 +35,6 @@ interface RecommendationCard {
   ratingBadgeLabel: string;
 }
 
-const RECOMMENDATION_LIMIT = 10;
 const RECOMMENDATIONS_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 const POSTER_GRADIENTS = [
@@ -47,120 +48,83 @@ const POSTER_GRADIENTS = [
   'linear-gradient(160deg, #5b1016 0%, #a82b1e 44%, #f3c14e 100%)',
 ] as const;
 const GENRE_LABELS: Record<string, string> = {
-  Action: 'Ação',
+  Action: 'Acao',
   Adventure: 'Aventura',
-  Animation: 'Animação',
-  Comedy: 'Comédia',
+  Animation: 'Animacao',
+  Children: 'Infantil',
+  Comedy: 'Comedia',
+  Crime: 'Crime',
+  Documentary: 'Documentario',
   Drama: 'Drama',
-  Family: 'Família',
+  Fantasy: 'Fantasia',
+  'Film-Noir': 'Film noir',
   Horror: 'Terror',
-  Mystery: 'Mistério',
+  IMAX: 'IMAX',
+  Musical: 'Musical',
+  Mystery: 'Misterio',
   Romance: 'Romance',
-  'Science Fiction': 'Ficção científica',
+  'Sci-Fi': 'Ficcao cientifica',
   Thriller: 'Thriller',
+  War: 'Guerra',
+  Western: 'Faroeste',
 };
 const TOP_RECOMMENDATION_CUES = [
-  'Melhor correspondência para você',
-  'Muito próximo do seu perfil',
+  'Melhor correspondencia para voce',
+  'Muito proximo do seu perfil',
   'Boa chance de agradar',
 ] as const;
 const TOP_RATED_BADGE_LABEL = 'Mais bem avaliado';
-const MOVIE_DETAILS: Record<
-  string,
-  { durationLabel: string; ratingLabel: string; director: string }
-> = {
-  arrival: {
-    durationLabel: '1h 56min',
-    ratingLabel: '7.9',
-    director: 'Denis Villeneuve',
-  },
-  'before-sunrise': {
-    durationLabel: '1h 41min',
-    ratingLabel: '8.1',
-    director: 'Richard Linklater',
-  },
-  'blade-runner-2049': {
-    durationLabel: '2h 44min',
-    ratingLabel: '8.0',
-    director: 'Denis Villeneuve',
-  },
-  coco: {
-    durationLabel: '1h 45min',
-    ratingLabel: '8.4',
-    director: 'Lee Unkrich',
-  },
-  'dune-part-one': {
-    durationLabel: '2h 35min',
-    ratingLabel: '8.0',
-    director: 'Denis Villeneuve',
-  },
-  'get-out': {
-    durationLabel: '1h 44min',
-    ratingLabel: '7.8',
-    director: 'Jordan Peele',
-  },
-  interstellar: {
-    durationLabel: '2h 49min',
-    ratingLabel: '8.7',
-    director: 'Christopher Nolan',
-  },
-  'lady-bird': {
-    durationLabel: '1h 34min',
-    ratingLabel: '7.4',
-    director: 'Greta Gerwig',
-  },
-  'little-miss-sunshine': {
-    durationLabel: '1h 41min',
-    ratingLabel: '7.8',
-    director: 'Jonathan Dayton e Valerie Faris',
-  },
-  'mad-max-fury-road': {
-    durationLabel: '2h',
-    ratingLabel: '8.1',
-    director: 'George Miller',
-  },
-  parasite: {
-    durationLabel: '2h 12min',
-    ratingLabel: '8.5',
-    director: 'Bong Joon Ho',
-  },
-  'spider-verse': {
-    durationLabel: '1h 57min',
-    ratingLabel: '8.4',
-    director: 'Bob Persichetti, Peter Ramsey e Rodney Rothman',
-  },
-};
-const FALLBACK_MOVIE_DETAILS = {
-  durationLabel: '2h',
-  ratingLabel: '8.0',
-  director: 'Direção não informada',
-} as const;
+const FALLBACK_DIRECTOR = 'Direcao nao informada';
 
 function getGenreLabel(genre: string): string {
   return GENRE_LABELS[genre] ?? genre;
 }
 
-function createRecommendationCard(movie: Movie, index: number): RecommendationCard {
-  const rank = index + 1;
-  const details = MOVIE_DETAILS[movie.id] ?? FALLBACK_MOVIE_DETAILS;
+function posterPlaceholder(title: string): string {
+  return `https://placehold.co/320x480/e8eef5/102542?text=${encodeURIComponent(title)}`;
+}
+
+function formatRuntime(runtime?: number): string {
+  if (!runtime) {
+    return 'Nao informado';
+  }
+
+  const hours = Math.floor(runtime / 60);
+  const minutes = runtime % 60;
+
+  if (!hours) {
+    return `${minutes}min`;
+  }
+
+  return minutes ? `${hours}h ${minutes}min` : `${hours}h`;
+}
+
+function formatRating(rating?: number): string {
+  return rating === undefined ? 'N/A' : rating.toFixed(1);
+}
+
+function createRecommendationCard(movie: Movie, index: number, rankOverride?: number): RecommendationCard {
+  const rank = rankOverride ?? index + 1;
 
   return {
     movie,
     posterGradient: POSTER_GRADIENTS[index % POSTER_GRADIENTS.length],
-    posterImage: `url("${movie.posterUrl}")`,
+    posterImage: `url("${movie.posterUrl ?? posterPlaceholder(movie.title)}")`,
     genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' • '),
-    durationLabel: details.durationLabel,
-    ratingLabel: details.ratingLabel,
-    director: details.director,
+    durationLabel: formatRuntime(movie.runtime),
+    ratingLabel: formatRating(movie.averageRating),
+    director: FALLBACK_DIRECTOR,
     rank,
     rankLabel: rank <= 3 ? `#${rank}` : '',
-    mediatedCue: TOP_RECOMMENDATION_CUES[index] ?? '',
+    mediatedCue: TOP_RECOMMENDATION_CUES[rank - 1] ?? '',
     ratingBadgeLabel: '',
   };
 }
 
 function getRatingValue(card: RecommendationCard): number {
-  return Number.parseFloat(card.ratingLabel.replace(',', '.'));
+  const parsed = Number.parseFloat(card.ratingLabel.replace(',', '.'));
+
+  return Number.isFinite(parsed) ? parsed : -1;
 }
 
 function addRecommendationBadges(cards: RecommendationCard[]): RecommendationCard[] {
@@ -184,33 +148,22 @@ function addRecommendationBadges(cards: RecommendationCard[]): RecommendationCar
 export class RecommendationsPage implements OnInit {
   private readonly participantSessionService = inject(ParticipantSessionService);
   private readonly experienceTrackingService = inject(ExperienceTrackingService);
+  private readonly recommendationApiService = inject(RecommendationApiService);
+  private readonly movieApiService = inject(MovieApiService);
   private readonly router = inject(Router);
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly session = this.participantSessionService.session;
-  readonly expandedMovieId = signal<string | null>(null);
-  readonly wouldWatchMovieIds = signal<Set<string>>(new Set());
+  readonly expandedMovieId = signal<number | null>(null);
+  readonly wouldWatchMovieIds = signal<Set<number>>(new Set());
   readonly recommendationPageIndex = signal(0);
   readonly recommendationsPageSize = signal(RECOMMENDATIONS_PAGE_SIZE);
+  readonly seedMovieCards = signal<RecommendationCard[]>([]);
+  readonly loadedRecommendationCards = signal<RecommendationCard[]>([]);
+  readonly apiError = signal('');
   readonly selectedSeedMovieIds = computed(() => this.session().selectedSeedMovieIds.slice(0, 5));
-  readonly selectedSeedMovieIdSet = computed(() => new Set(this.selectedSeedMovieIds()));
-  readonly seedCards = computed(() =>
-    this.selectedSeedMovieIds()
-      .map((movieId) => MOCK_MOVIES.find((movie) => movie.id === movieId))
-      .filter((movie): movie is Movie => Boolean(movie))
-      .map((movie, index) => createRecommendationCard(movie, index)),
-  );
-  readonly recommendationCards = computed(() => {
-    const selectedMovieIds = this.selectedSeedMovieIdSet();
-    const nonSelectedMovies = MOCK_MOVIES.filter((movie) => !selectedMovieIds.has(movie.id));
-    const fallbackMovies = MOCK_MOVIES.filter((movie) => selectedMovieIds.has(movie.id));
-
-    const cards = [...nonSelectedMovies, ...fallbackMovies]
-      .slice(0, RECOMMENDATION_LIMIT)
-      .map((movie, index) => createRecommendationCard(movie, index));
-
-    return addRecommendationBadges(cards);
-  });
+  readonly seedCards = computed(() => this.seedMovieCards());
+  readonly recommendationCards = computed(() => this.loadedRecommendationCards());
   readonly recommendationPageCount = computed(() =>
     Math.max(1, Math.ceil(this.recommendationCards().length / this.recommendationsPageSize())),
   );
@@ -248,6 +201,8 @@ export class RecommendationsPage implements OnInit {
 
   ngOnInit(): void {
     this.experienceTrackingService.trackExperienceStarted(this.trackingContext());
+    this.loadSeedMovies();
+    this.loadRecommendations();
   }
 
   @HostListener('document:keydown.escape')
@@ -255,7 +210,7 @@ export class RecommendationsPage implements OnInit {
     this.closeDetails();
   }
 
-  openDetails(movieId: string): void {
+  openDetails(movieId: number): void {
     if (this.expandedMovieId() === movieId) {
       return;
     }
@@ -264,7 +219,7 @@ export class RecommendationsPage implements OnInit {
     this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'details_opened');
   }
 
-  openDetailsFromCard(movieId: string, event: Event): void {
+  openDetailsFromCard(movieId: number, event: Event): void {
     if (this.isInteractiveEventTarget(event)) {
       return;
     }
@@ -272,7 +227,7 @@ export class RecommendationsPage implements OnInit {
     this.openDetails(movieId);
   }
 
-  onRecommendationCardKeydown(event: KeyboardEvent, movieId: string): void {
+  onRecommendationCardKeydown(event: KeyboardEvent, movieId: number): void {
     if (this.isInteractiveEventTarget(event) || (event.key !== 'Enter' && event.key !== ' ')) {
       return;
     }
@@ -319,7 +274,7 @@ export class RecommendationsPage implements OnInit {
     const selectedMovieIds = Array.from(this.wouldWatchMovieIds());
 
     this.experienceTrackingService.trackExperienceCompleted(this.trackingContext(), {
-      selectedMovieIds,
+      selectedMovieIds: selectedMovieIds.map(String),
       selectedStimulusSummary: this.selectedStimulusSummary(selectedMovieIds),
     });
     this.closeDetails();
@@ -357,7 +312,7 @@ export class RecommendationsPage implements OnInit {
     this.goToRecommendationPage(this.recommendationPageIndex() + 1);
   }
 
-  toggleWouldWatch(movieId: string, event?: Event): void {
+  toggleWouldWatch(movieId: number, event?: Event): void {
     event?.stopPropagation();
 
     if (!this.wouldWatchMovieIds().has(movieId)) {
@@ -367,11 +322,11 @@ export class RecommendationsPage implements OnInit {
     this.wouldWatchMovieIds.update((movieIds) => this.toggleMovieId(movieIds, movieId));
   }
 
-  isDetailsExpanded(movieId: string): boolean {
+  isDetailsExpanded(movieId: number): boolean {
     return this.expandedMovieId() === movieId;
   }
 
-  isMarkedWouldWatch(movieId: string): boolean {
+  isMarkedWouldWatch(movieId: number): boolean {
     return this.wouldWatchMovieIds().has(movieId);
   }
 
@@ -383,7 +338,52 @@ export class RecommendationsPage implements OnInit {
     return card.rank === 1;
   }
 
-  private toggleMovieId(movieIds: Set<string>, movieId: string): Set<string> {
+  private loadSeedMovies(): void {
+    const selectedMovieIds = this.selectedSeedMovieIds();
+
+    if (!selectedMovieIds.length) {
+      this.seedMovieCards.set([]);
+      return;
+    }
+
+    forkJoin(selectedMovieIds.map((movieId) => this.movieApiService.getMovie(movieId))).subscribe({
+      next: (movies) => {
+        this.seedMovieCards.set(movies.map((movie, index) => createRecommendationCard(movie, index)));
+      },
+      error: () => this.seedMovieCards.set([]),
+    });
+  }
+
+  private loadRecommendations(): void {
+    const backendUserId = this.session().backendUserId;
+
+    if (!backendUserId) {
+      this.apiError.set('Participante sem ID do backend. Volte para a entrada e crie o participante.');
+      return;
+    }
+
+    this.recommendationApiService.listJoinedRecommendations(backendUserId).subscribe({
+      next: (recommendations) => {
+        this.loadedRecommendationCards.set(
+          addRecommendationBadges(
+            recommendations.map((recommendation, index) =>
+              createRecommendationCard(
+                recommendation.movie,
+                index,
+                recommendation.rankPosition,
+              ),
+            ),
+          ),
+        );
+      },
+      error: () => {
+        this.loadedRecommendationCards.set([]);
+        this.apiError.set('Nao foi possivel carregar as recomendacoes da API.');
+      },
+    });
+  }
+
+  private toggleMovieId(movieIds: Set<number>, movieId: number): Set<number> {
     const nextMovieIds = new Set(movieIds);
 
     if (nextMovieIds.has(movieId)) {
@@ -395,7 +395,7 @@ export class RecommendationsPage implements OnInit {
     return nextMovieIds;
   }
 
-  private trackMovieSelected(movieId: string): void {
+  private trackMovieSelected(movieId: number): void {
     const card = this.recommendationCards().find(
       (recommendationCard) => recommendationCard.movie.id === movieId,
     );
@@ -405,13 +405,13 @@ export class RecommendationsPage implements OnInit {
     }
 
     this.experienceTrackingService.trackMovieSelected(this.trackingContext(), {
-      movieId: card.movie.id,
+      movieId: card.movie.id.toString(),
       movieTitle: card.movie.title,
       persuasiveStimulusType: this.persuasiveStimulusTypeForCard(card),
     });
   }
 
-  private selectedStimulusSummary(selectedMovieIds: string[]): SelectedStimulusSummary {
+  private selectedStimulusSummary(selectedMovieIds: number[]): SelectedStimulusSummary {
     const summary = createEmptySelectedStimulusSummary();
 
     for (const movieId of selectedMovieIds) {
@@ -423,7 +423,7 @@ export class RecommendationsPage implements OnInit {
     return summary;
   }
 
-  private persuasiveStimulusTypeForMovie(movieId: string): PersuasiveStimulusType {
+  private persuasiveStimulusTypeForMovie(movieId: number): PersuasiveStimulusType {
     const card = this.recommendationCards().find(
       (recommendationCard) => recommendationCard.movie.id === movieId,
     );

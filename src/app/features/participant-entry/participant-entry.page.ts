@@ -2,6 +2,8 @@ import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 
+import { ParticipantApiService } from '../../core/api/participant-api.service';
+import { toApiAgeRange, toApiEducationLevel, toApiGender } from '../../core/api/api-types';
 import {
   ExperimentVariant,
   ParticipantAgeRange,
@@ -25,6 +27,7 @@ export class ParticipantEntryPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly participantSessionService = inject(ParticipantSessionService);
+  private readonly participantApiService = inject(ParticipantApiService);
 
   name = this.participantSessionService.session().name;
   email = this.participantSessionService.session().email ?? '';
@@ -35,6 +38,8 @@ export class ParticipantEntryPage {
   gender = this.participantSessionService.session().gender;
   genderDetail = this.participantSessionService.session().genderDetail ?? '';
   experimentVariant = this.participantSessionService.session().experimentVariant;
+  isSubmitting = false;
+  submitError = '';
 
   readonly ageRangeOptions: SelectionOption<ParticipantAgeRange>[] = [
     { label: '18 a 24 anos', value: '18-24' },
@@ -68,7 +73,13 @@ export class ParticipantEntryPage {
   ];
 
   get canContinue(): boolean {
-    return this.name.trim().length > 0 && !!this.ageRange && !!this.educationLevel && !!this.gender;
+    return (
+      !this.isSubmitting &&
+      this.name.trim().length > 0 &&
+      !!this.ageRange &&
+      !!this.educationLevel &&
+      !!this.gender
+    );
   }
 
   get asksAcademicCourse(): boolean {
@@ -131,6 +142,10 @@ export class ParticipantEntryPage {
     }
 
     const experimentVariant = this.getAssignedExperimentVariant();
+    const trimmedEmail = this.email.trim();
+    const trimmedProfession = this.profession.trim();
+    const trimmedAcademicCourse = this.academicCourse.trim();
+    const trimmedGenderDetail = this.genderDetail.trim();
 
     this.participantSessionService.setParticipant(this.name, this.email, {
       ageRange,
@@ -142,7 +157,34 @@ export class ParticipantEntryPage {
     });
     this.participantSessionService.setExperimentVariant(experimentVariant);
     this.experimentVariant = experimentVariant;
-    void this.router.navigate(['/instructions']);
+    this.isSubmitting = true;
+    this.submitError = '';
+
+    this.participantApiService
+      .createUser({
+        name: this.name.trim(),
+        email: trimmedEmail ? trimmedEmail : undefined,
+        current_occupation: trimmedProfession ? trimmedProfession : undefined,
+        age_range: toApiAgeRange(ageRange),
+        education_level: toApiEducationLevel(educationLevel),
+        course: this.asksAcademicCourse && trimmedAcademicCourse ? trimmedAcademicCourse : undefined,
+        gender: toApiGender(gender),
+        gender_description:
+          this.asksGenderDetail && trimmedGenderDetail ? trimmedGenderDetail : undefined,
+      })
+      .subscribe({
+        next: (user) => {
+          this.participantSessionService.setBackendUserId(user.id);
+          void this.router.navigate(['/instructions']);
+        },
+        error: () => {
+          this.isSubmitting = false;
+          this.submitError = 'Nao foi possivel criar o participante. Verifique a API e tente novamente.';
+        },
+        complete: () => {
+          this.isSubmitting = false;
+        },
+      });
   }
 
   private getAssignedExperimentVariant(): ExperimentVariant {

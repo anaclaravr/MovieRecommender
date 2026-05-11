@@ -24,6 +24,7 @@ export type ParticipantGender = 'female' | 'male' | 'non-binary' | 'other' | 'pr
 export interface ParticipantSession {
   sessionId: string;
   participantId: string;
+  backendUserId?: number;
   name: string;
   email?: string;
   ageRange?: ParticipantAgeRange;
@@ -32,7 +33,7 @@ export interface ParticipantSession {
   academicCourse?: string;
   gender?: ParticipantGender;
   genderDetail?: string;
-  selectedSeedMovieIds: string[];
-  selectedNeutralMovieIds: string[];
+  selectedSeedMovieIds: number[];
+  selectedNeutralMovieIds: number[];
   experimentVariant: ExperimentVariant;
 }

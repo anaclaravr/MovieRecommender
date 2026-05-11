@@ -42,12 +42,13 @@
         <button
           class="glass-button glass-button--light glass-button--cta choice-feedback-page__submit-button"
           type="button"
+          [disabled]="isSubmitting()"
           (click)="submitQuestionnaire()"
         >
           <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
             <i class="pi pi-send"></i>
           </span>
-          <span class="glass-button__content">Enviar</span>
+          <span class="glass-button__content">{{ isSubmitting() ? 'Enviando...' : 'Enviar' }}</span>
         </button>
       </div>
     </div>
@@ -64,6 +65,16 @@
     </header>
 
     <section class="questionnaire-section" aria-label="Perguntas do questionário">
+      @if (submitError()) {
+        <p class="question-card__error" role="alert">{{ submitError() }}</p>
+      }
+
+      @if (submitSuccess()) {
+        <p class="liked-section__empty glass-surface" role="status">
+          Questionario enviado com sucesso.
+        </p>
+      }
+
       @for (question of questions; track question.id) {
         <article
           class="question-card glass-surface"

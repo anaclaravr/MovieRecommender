@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 
+import { FeedbackApiService } from '../../core/api/feedback-api.service';
 import { ParticipantSessionService } from '../../core/services/participant-session.service';
 
 interface LikertOption {
@@ -22,6 +23,7 @@ interface FeedbackQuestion {
 export class ChoiceFeedbackPage {
   private readonly router = inject(Router);
   private readonly participantSessionService = inject(ParticipantSessionService);
+  private readonly feedbackApiService = inject(FeedbackApiService);
 
   readonly questions: FeedbackQuestion[] = [
     { id: 1, text: 'Estou satisfeito(a) com os filmes que selecionei.' },
@@ -44,6 +46,9 @@ export class ChoiceFeedbackPage {
   ];
   readonly selectedAnswers = signal<Record<number, number>>({});
   readonly attemptedSubmit = signal(false);
+  readonly isSubmitting = signal(false);
+  readonly submitError = signal('');
+  readonly submitSuccess = signal(false);
   readonly isNeutralVariant = computed(
     () => this.participantSessionService.session().experimentVariant === 'neutral',
   );
@@ -86,9 +91,38 @@ export class ChoiceFeedbackPage {
 
   submitQuestionnaire(): void {
     this.attemptedSubmit.set(true);
+    this.submitError.set('');
+    this.submitSuccess.set(false);
 
     if (!this.canSubmit()) {
       return;
     }
+
+    const userId = this.participantSessionService.session().backendUserId;
+
+    if (!userId) {
+      this.submitError.set('Participante sem ID do backend. Volte para a entrada e tente novamente.');
+      return;
+    }
+
+    const answers = this.selectedAnswers();
+
+    this.isSubmitting.set(true);
+    this.feedbackApiService
+      .createFeedback({
+        user_id: userId,
+        selected_movies_satisfaction: answers[1],
+        would_choose_again: answers[2],
+        reflected_personal_preferences: answers[3],
+        selection_difficulty: answers[4],
+        presentation_helped_choice: answers[5],
+        platform_helped_find_interesting_movies: answers[6],
+        searched_more_information_before_final_choice: answers[7],
+      })
+      .subscribe({
+        next: () => this.submitSuccess.set(true),
+        error: () => this.submitError.set('Nao foi possivel enviar o questionario. Tente novamente.'),
+        complete: () => this.isSubmitting.set(false),
+      });
   }
 }
