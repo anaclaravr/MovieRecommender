@@ -205,6 +205,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
   private genreDragStartX = 0;
   private genreDragStartScrollLeft = 0;
   private shouldSuppressGenreClick = false;
+  private readonly selectedMovieHydrationRequests = new Set<number>();
 
   readonly selectionSteps = [1, 2, 3, 4, 5];
   readonly maxSelectedMovies = MAX_SELECTED_MOVIES;
@@ -233,6 +234,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
   readonly movieCache = signal<Map<number, MovieSelectionCard>>(new Map());
   readonly movieTotal = signal(0);
   readonly isLoadingMovies = signal(false);
+  readonly isSavingFavorites = signal(false);
   readonly apiError = signal('');
 
   readonly selectedMovieIds = computed(() =>
@@ -284,7 +286,9 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
       .map((movieId) => this.movieCache().get(movieId))
       .filter((card): card is MovieSelectionCard => Boolean(card)),
   );
-  readonly hasNoResults = computed(() => !this.isLoadingMovies() && this.filteredCards().length === 0);
+  readonly hasNoResults = computed(
+    () => !this.isLoadingMovies() && this.filteredCards().length === 0,
+  );
   readonly emptyStateMessage = computed(() => {
     if (this.apiError()) {
       return this.apiError();
@@ -544,6 +548,15 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     );
   }
 
+  clearSelectedMovies(): void {
+    if (this.selectedCount() === 0) {
+      return;
+    }
+
+    this.updateSelectedMovieIds([]);
+    this.showContinueRequirementAlert.set(false);
+  }
+
   toggleMovieDetails(movieId: number, event?: Event): void {
     event?.preventDefault();
     event?.stopPropagation();
@@ -593,6 +606,10 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
   }
 
   continueToLoading(): void {
+    if (this.isSavingFavorites()) {
+      return;
+    }
+
     if (!this.canContinue()) {
       this.showContinueRequirementAlert.set(true);
       this.showSelectionLimitHint.set(false);
@@ -699,6 +716,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
             cards.forEach((card) => nextCache.set(card.movie.id, card));
             return nextCache;
           });
+          this.hydrateMissingSelectedCards();
           this.scheduleGenreScrollStateUpdate();
         },
         error: () => {
@@ -718,11 +736,19 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
       return;
     }
 
-    this.recommendationApiService.saveFavoriteMovies(backendUserId, this.selectedMovieIds()).subscribe({
-      next: () => void this.router.navigateByUrl('/loading'),
-      error: () =>
-        this.apiError.set('Nao foi possivel salvar os filmes favoritos. Tente novamente.'),
-    });
+    this.isSavingFavorites.set(true);
+    this.apiError.set('');
+
+    this.recommendationApiService
+      .saveFavoriteMovies(backendUserId, this.selectedMovieIds())
+      .subscribe({
+        next: () => void this.router.navigateByUrl('/loading'),
+        error: () => {
+          this.isSavingFavorites.set(false);
+          this.apiError.set('Nao foi possivel salvar os filmes favoritos. Tente novamente.');
+        },
+        complete: () => this.isSavingFavorites.set(false),
+      });
   }
 
   private updateSelectedMovieIds(ids: number[]): void {
@@ -734,6 +760,35 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     if (normalizedIds.length === this.maxSelectedMovies) {
       this.showContinueRequirementAlert.set(false);
     }
+
+    this.hydrateMissingSelectedCards();
+  }
+
+  private hydrateMissingSelectedCards(): void {
+    const cache = this.movieCache();
+
+    this.selectedMovieIds()
+      .filter((movieId) => !cache.has(movieId) && !this.selectedMovieHydrationRequests.has(movieId))
+      .forEach((movieId) => {
+        this.selectedMovieHydrationRequests.add(movieId);
+
+        this.movieApiService.getMovie(movieId).subscribe({
+          next: (movie) => {
+            this.movieCache.update((currentCache) => {
+              if (currentCache.has(movie.id)) {
+                return currentCache;
+              }
+
+              const nextCache = new Map(currentCache);
+              const selectedIndex = Math.max(0, this.selectedMovieIds().indexOf(movie.id));
+              nextCache.set(movie.id, createMovieSelectionCard(movie, selectedIndex));
+              return nextCache;
+            });
+          },
+          error: () => this.selectedMovieHydrationRequests.delete(movieId),
+          complete: () => this.selectedMovieHydrationRequests.delete(movieId),
+        });
+      });
   }
 
   private isMovieOrdering(ordering: string): ordering is MovieOrdering {

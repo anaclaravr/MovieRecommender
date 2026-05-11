@@ -95,6 +95,21 @@ describe('MovieSelectionPage', () => {
     ]);
   });
 
+  it('clears all selected movies from the drawer action', () => {
+    const selectedMovieIds = MOCK_MOVIES.slice(0, 3).map((movie) => movie.id);
+
+    for (const movieId of selectedMovieIds) {
+      component.toggleMovieSelection(movieId);
+    }
+
+    component.clearSelectedMovies();
+
+    expect(component.selectedMovieIds()).toEqual([]);
+    expect(component.selectedCount()).toBe(0);
+    expect(component.canContinue()).toBe(false);
+    expect(participantSessionService.session().selectedSeedMovieIds).toEqual([]);
+  });
+
   it('keeps the drawer closed by default and toggles it on demand', () => {
     expect(component.isDrawerOpen()).toBe(false);
 
@@ -103,6 +118,27 @@ describe('MovieSelectionPage', () => {
 
     component.closeDrawer();
     expect(component.isDrawerOpen()).toBe(false);
+  });
+
+  it('hydrates selected drawer cards when the selected ids were restored from the session', () => {
+    const restoredMovieIds = MOCK_MOVIES.slice(10, 12).map((movie) => movie.id);
+    participantSessionService.setSelectedSeedMovieIds(restoredMovieIds);
+
+    const restoredFixture = TestBed.createComponent(MovieSelectionPage);
+    const restoredComponent = restoredFixture.componentInstance;
+    restoredFixture.detectChanges();
+    flushMovies(MOCK_MOVIES.slice(0, 5));
+
+    expect(restoredComponent.selectedCount()).toBe(2);
+    expect(restoredComponent.selectedCards()).toEqual([]);
+
+    for (const movie of MOCK_MOVIES.slice(10, 12)) {
+      flushMovie(movie);
+    }
+
+    expect(restoredComponent.selectedCards().map((card) => card.movie.id)).toEqual(
+      restoredMovieIds,
+    );
   });
 
   it('expands movie details inline instead of using a separate modal state', () => {
@@ -187,6 +223,26 @@ describe('MovieSelectionPage', () => {
       page: expectedPage,
       size: 10,
       pages: 1,
+    });
+  }
+
+  function flushMovie(movie: (typeof MOCK_MOVIES)[number]): void {
+    const request = httpMock.expectOne((req) => req.url.endsWith(`/filmes/${movie.id}`));
+
+    request.flush({
+      id: movie.id,
+      movie_id: movie.movieId,
+      tmdb_id: movie.tmdbId ?? null,
+      title: movie.originalTitle ?? movie.title,
+      title_translation: movie.titleTranslation ?? null,
+      year: movie.year ?? null,
+      genres: movie.genres,
+      poster_url: movie.posterUrl ?? null,
+      average_rating: movie.averageRating ?? null,
+      rating_count: movie.ratingCount,
+      popularity: movie.popularity ?? null,
+      runtime: movie.runtime ?? null,
+      synopsis: movie.synopsis ?? null,
     });
   }
 });

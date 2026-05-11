@@ -21,12 +21,21 @@
           class="glass-button glass-button--light glass-button--cta participant-entry-page__continue-button"
           type="submit"
           form="participant-entry-form"
-          [disabled]="!canContinue"
+          [class.is-loading]="isSubmitting"
+          [attr.aria-busy]="isSubmitting"
         >
           <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
-            <i class="pi pi-arrow-right"></i>
+            <i
+              [class]="
+                isSubmitting
+                  ? 'pi pi-spinner participant-entry-page__loading-icon'
+                  : 'pi pi-arrow-right'
+              "
+            ></i>
           </span>
-          <span class="glass-button__content">{{ isSubmitting ? 'Enviando...' : 'Continuar' }}</span>
+          <span class="glass-button__content">{{
+            isSubmitting ? 'Enviando...' : 'Continuar'
+          }}</span>
         </button>
       </div>
     </div>
@@ -64,7 +73,7 @@
         <div class="field-grid">
           <label class="field">
             <span class="field__label">Nome <span aria-hidden="true">*</span></span>
-            <span class="input-shell">
+            <span class="input-shell" [class.has-error]="shouldShowNameError">
               <i class="pi pi-user input-shell__icon" aria-hidden="true"></i>
               <input
                 type="text"
@@ -73,8 +82,15 @@
                 placeholder="Informe seu nome"
                 autocomplete="name"
                 required
+                [attr.aria-invalid]="shouldShowNameError"
+                [attr.aria-describedby]="shouldShowNameError ? 'name-error' : null"
               />
             </span>
+            @if (shouldShowNameError) {
+              <p class="field__error" id="name-error" role="alert">
+                Informe seu nome para continuar.
+              </p>
+            }
           </label>
 
           <label class="field">
@@ -82,7 +98,7 @@
               Email
               <small class="optional-chip">Opcional</small>
             </span>
-            <span class="input-shell">
+            <span class="input-shell" [class.has-error]="shouldShowEmailError">
               <i class="pi pi-envelope input-shell__icon" aria-hidden="true"></i>
               <input
                 type="email"
@@ -90,8 +106,15 @@
                 [(ngModel)]="email"
                 placeholder="nome@email.com"
                 autocomplete="email"
+                [attr.aria-invalid]="shouldShowEmailError"
+                [attr.aria-describedby]="shouldShowEmailError ? 'email-error' : null"
               />
             </span>
+            @if (shouldShowEmailError) {
+              <p class="field__error" id="email-error" role="alert">
+                Informe um email válido, como nome@email.com.
+              </p>
+            }
           </label>
 
           <label class="field">
@@ -119,7 +142,7 @@
           <h2 id="profile-info-title">Dados demográficos</h2>
         </div>
 
-        <fieldset class="field radio-field">
+        <fieldset class="field radio-field" [class.has-error]="shouldShowAgeRangeError">
           <legend>Faixa etária <span aria-hidden="true">*</span></legend>
           <div class="option-grid option-grid--age">
             @for (option of ageRangeOptions; track option.value) {
@@ -137,9 +160,12 @@
               </label>
             }
           </div>
+          @if (shouldShowAgeRangeError) {
+            <p class="field__error" role="alert">Selecione uma faixa etária para continuar.</p>
+          }
         </fieldset>
 
-        <fieldset class="field radio-field">
+        <fieldset class="field radio-field" [class.has-error]="shouldShowEducationLevelError">
           <legend>Escolaridade <span aria-hidden="true">*</span></legend>
           <div class="option-grid option-grid--education">
             @for (option of educationLevelOptions; track option.value) {
@@ -157,6 +183,9 @@
               </label>
             }
           </div>
+          @if (shouldShowEducationLevelError) {
+            <p class="field__error" role="alert">Selecione sua escolaridade para continuar.</p>
+          }
         </fieldset>
 
         @if (asksAcademicCourse) {
@@ -178,7 +207,10 @@
           </label>
         }
 
-        <fieldset class="field radio-field radio-field--compact">
+        <fieldset
+          class="field radio-field radio-field--compact"
+          [class.has-error]="shouldShowGenderError"
+        >
           <legend>Gênero <span aria-hidden="true">*</span></legend>
           <div class="option-grid option-grid--gender">
             @for (option of genderOptions; track option.value) {
@@ -196,6 +228,9 @@
               </label>
             }
           </div>
+          @if (shouldShowGenderError) {
+            <p class="field__error" role="alert">Selecione uma opção de gênero para continuar.</p>
+          }
         </fieldset>
 
         @if (asksGenderDetail) {
