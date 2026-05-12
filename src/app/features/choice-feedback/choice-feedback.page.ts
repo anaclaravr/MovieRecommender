@@ -121,7 +121,7 @@ export class ChoiceFeedbackPage {
       })
       .subscribe({
         next: () => this.submitSuccess.set(true),
-        error: () => this.submitError.set('Nao foi possivel enviar o questionario. Tente novamente.'),
+        error: () => this.submitError.set('Não foi possível enviar o questionário. Tente novamente.'),
         complete: () => this.isSubmitting.set(false),
       });
   }

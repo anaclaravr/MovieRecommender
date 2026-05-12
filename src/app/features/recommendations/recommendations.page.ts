@@ -48,33 +48,33 @@ const POSTER_GRADIENTS = [
   'linear-gradient(160deg, #5b1016 0%, #a82b1e 44%, #f3c14e 100%)',
 ] as const;
 const GENRE_LABELS: Record<string, string> = {
-  Action: 'Acao',
+  Action: 'Ação',
   Adventure: 'Aventura',
-  Animation: 'Animacao',
+  Animation: 'Animação',
   Children: 'Infantil',
-  Comedy: 'Comedia',
+  Comedy: 'Comédia',
   Crime: 'Crime',
-  Documentary: 'Documentario',
+  Documentary: 'Documentário',
   Drama: 'Drama',
   Fantasy: 'Fantasia',
   'Film-Noir': 'Film noir',
   Horror: 'Terror',
   IMAX: 'IMAX',
   Musical: 'Musical',
-  Mystery: 'Misterio',
+  Mystery: 'Mistério',
   Romance: 'Romance',
-  'Sci-Fi': 'Ficcao cientifica',
+  'Sci-Fi': 'Ficção científica',
   Thriller: 'Thriller',
   War: 'Guerra',
   Western: 'Faroeste',
 };
 const TOP_RECOMMENDATION_CUES = [
-  'Melhor correspondencia para voce',
-  'Muito proximo do seu perfil',
+  'Melhor correspondência para você',
+  'Muito próximo do seu perfil',
   'Boa chance de agradar',
 ] as const;
 const TOP_RATED_BADGE_LABEL = 'Mais bem avaliado';
-const FALLBACK_DIRECTOR = 'Direcao nao informada';
+const FALLBACK_DIRECTOR = 'Direção não informada';
 
 function getGenreLabel(genre: string): string {
   return GENRE_LABELS[genre] ?? genre;
@@ -86,7 +86,7 @@ function posterPlaceholder(title: string): string {
 
 function formatRuntime(runtime?: number): string {
   if (!runtime) {
-    return 'Nao informado';
+    return 'Não informado';
   }
 
   const hours = Math.floor(runtime / 60);
@@ -155,13 +155,13 @@ export class RecommendationsPage implements OnInit {
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly session = this.participantSessionService.session;
   readonly expandedMovieId = signal<number | null>(null);
-  readonly wouldWatchMovieIds = signal<Set<number>>(new Set());
   readonly recommendationPageIndex = signal(0);
   readonly recommendationsPageSize = signal(RECOMMENDATIONS_PAGE_SIZE);
   readonly seedMovieCards = signal<RecommendationCard[]>([]);
   readonly loadedRecommendationCards = signal<RecommendationCard[]>([]);
   readonly apiError = signal('');
   readonly selectedSeedMovieIds = computed(() => this.session().selectedSeedMovieIds.slice(0, 5));
+  readonly selectedMediatedMovieIds = computed(() => this.session().selectedMediatedMovieIds);
   readonly seedCards = computed(() => this.seedMovieCards());
   readonly recommendationCards = computed(() => this.loadedRecommendationCards());
   readonly recommendationPageCount = computed(() =>
@@ -197,7 +197,7 @@ export class RecommendationsPage implements OnInit {
 
     return this.recommendationCards().find((card) => card.movie.id === expandedMovieId) ?? null;
   });
-  readonly wouldWatchCount = computed(() => this.wouldWatchMovieIds().size);
+  readonly wouldWatchCount = computed(() => this.selectedMediatedMovieIds().length);
 
   ngOnInit(): void {
     this.experienceTrackingService.trackExperienceStarted(this.trackingContext());
@@ -271,7 +271,7 @@ export class RecommendationsPage implements OnInit {
   }
 
   finishRecommendations(): void {
-    const selectedMovieIds = Array.from(this.wouldWatchMovieIds());
+    const selectedMovieIds = this.selectedMediatedMovieIds();
 
     this.experienceTrackingService.trackExperienceCompleted(this.trackingContext(), {
       selectedMovieIds: selectedMovieIds.map(String),
@@ -315,11 +315,13 @@ export class RecommendationsPage implements OnInit {
   toggleWouldWatch(movieId: number, event?: Event): void {
     event?.stopPropagation();
 
-    if (!this.wouldWatchMovieIds().has(movieId)) {
+    if (!this.selectedMediatedMovieIds().includes(movieId)) {
       this.trackMovieSelected(movieId);
     }
 
-    this.wouldWatchMovieIds.update((movieIds) => this.toggleMovieId(movieIds, movieId));
+    this.participantSessionService.setSelectedMediatedMovieIds(
+      this.toggleMovieId(this.selectedMediatedMovieIds(), movieId),
+    );
   }
 
   isDetailsExpanded(movieId: number): boolean {
@@ -327,7 +329,7 @@ export class RecommendationsPage implements OnInit {
   }
 
   isMarkedWouldWatch(movieId: number): boolean {
-    return this.wouldWatchMovieIds().has(movieId);
+    return this.selectedMediatedMovieIds().includes(movieId);
   }
 
   isTopRecommendation(card: RecommendationCard): boolean {
@@ -378,12 +380,12 @@ export class RecommendationsPage implements OnInit {
       },
       error: () => {
         this.loadedRecommendationCards.set([]);
-        this.apiError.set('Nao foi possivel carregar as recomendacoes da API.');
+        this.apiError.set('Não foi possível carregar as recomendações da API.');
       },
     });
   }
 
-  private toggleMovieId(movieIds: Set<number>, movieId: number): Set<number> {
+  private toggleMovieId(movieIds: number[], movieId: number): number[] {
     const nextMovieIds = new Set(movieIds);
 
     if (nextMovieIds.has(movieId)) {
@@ -392,7 +394,7 @@ export class RecommendationsPage implements OnInit {
       nextMovieIds.add(movieId);
     }
 
-    return nextMovieIds;
+    return Array.from(nextMovieIds);
   }
 
   private trackMovieSelected(movieId: number): void {

@@ -80,22 +80,22 @@ const DEFAULT_GENRES = [
   'Western',
 ] as const;
 const GENRE_LABELS: Record<string, string> = {
-  Action: 'Acao',
+  Action: 'Ação',
   Adventure: 'Aventura',
-  Animation: 'Animacao',
+  Animation: 'Animação',
   Children: 'Infantil',
-  Comedy: 'Comedia',
+  Comedy: 'Comédia',
   Crime: 'Crime',
-  Documentary: 'Documentario',
+  Documentary: 'Documentário',
   Drama: 'Drama',
   Fantasy: 'Fantasia',
   'Film-Noir': 'Film noir',
   Horror: 'Terror',
   IMAX: 'IMAX',
   Musical: 'Musical',
-  Mystery: 'Misterio',
+  Mystery: 'Mistério',
   Romance: 'Romance',
-  'Sci-Fi': 'Ficcao cientifica',
+  'Sci-Fi': 'Ficção científica',
   Thriller: 'Thriller',
   War: 'Guerra',
   Western: 'Faroeste',
@@ -145,7 +145,7 @@ function posterPlaceholder(title: string): string {
 
 function formatRuntime(runtime?: number): string {
   if (!runtime) {
-    return 'Nao informado';
+    return 'Não informado';
   }
 
   const hours = Math.floor(runtime / 60);
@@ -283,7 +283,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
       return `Nenhum filme encontrado em ${this.activeGenreLabel()}.`;
     }
 
-    return 'Nenhum filme disponivel no momento.';
+    return 'Nenhum filme disponível no momento.';
   });
 
   constructor() {
@@ -670,7 +670,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
         error: () => {
           this.movieCards.set([]);
           this.movieTotal.set(0);
-          this.apiError.set('Nao foi possivel carregar os filmes da API.');
+          this.apiError.set('Não foi possível carregar os filmes da API.');
         },
         complete: () => this.isLoadingMovies.set(false),
       });

@@ -220,7 +220,7 @@ export class ParticipantEntryPage {
         error: () => {
           this.isSubmitting = false;
           this.submitError =
-            'Nao foi possivel criar o participante. Verifique a API e tente novamente.';
+            'Não foi possível criar o participante. Verifique a API e tente novamente.';
         },
         complete: () => {
           this.isSubmitting = false;

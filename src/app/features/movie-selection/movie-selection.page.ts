@@ -81,22 +81,22 @@ const DEFAULT_GENRES = [
   'Western',
 ] as const;
 const GENRE_LABELS: Record<string, string> = {
-  Action: 'Acao',
+  Action: 'Ação',
   Adventure: 'Aventura',
-  Animation: 'Animacao',
+  Animation: 'Animação',
   Children: 'Infantil',
-  Comedy: 'Comedia',
+  Comedy: 'Comédia',
   Crime: 'Crime',
-  Documentary: 'Documentario',
+  Documentary: 'Documentário',
   Drama: 'Drama',
   Fantasy: 'Fantasia',
   'Film-Noir': 'Film noir',
   Horror: 'Terror',
   IMAX: 'IMAX',
   Musical: 'Musical',
-  Mystery: 'Misterio',
+  Mystery: 'Mistério',
   Romance: 'Romance',
-  'Sci-Fi': 'Ficcao cientifica',
+  'Sci-Fi': 'Ficção científica',
   Thriller: 'Thriller',
   War: 'Guerra',
   Western: 'Faroeste',
@@ -123,7 +123,7 @@ const GENRE_ICON_CLASSES: Record<string, string> = {
   War: 'pi pi-flag',
   Western: 'pi pi-compass',
 };
-const SELECTION_LIMIT_HINT = 'Voce ja selecionou 5 filmes. Remova um para escolher outro.';
+const SELECTION_LIMIT_HINT = 'Você já selecionou 5 filmes. Remova um para escolher outro.';
 const GENRE_OPTIONS: GenreFilterOption[] = [
   { id: ALL_GENRES_ID, label: 'Todos', iconClass: getGenreIconClass(ALL_GENRES_ID) },
   ...DEFAULT_GENRES.map((genre) => ({
@@ -151,7 +151,7 @@ function posterPlaceholder(title: string): string {
 
 function formatRuntime(runtime?: number): string {
   if (!runtime) {
-    return 'Nao informado';
+    return 'Não informado';
   }
 
   const hours = Math.floor(runtime / 60);
@@ -247,12 +247,12 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     const remainingMovies = this.maxSelectedMovies - this.selectedCount();
 
     if (remainingMovies <= 0) {
-      return 'Voce ja selecionou os 5 filmes necessarios para continuar.';
+      return 'Você já selecionou os 5 filmes necessários para continuar.';
     }
 
     return `Escolha mais ${remainingMovies} ${
       remainingMovies === 1 ? 'filme' : 'filmes'
-    } para avancar para as recomendacoes.`;
+    } para avançar para as recomendações.`;
   });
   readonly activeGenreLabel = computed(
     () =>
@@ -310,7 +310,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
       return `Nenhum filme encontrado em ${this.activeGenreLabel()}.`;
     }
 
-    return 'Nenhum filme disponivel no momento.';
+    return 'Nenhum filme disponível no momento.';
   });
 
   constructor() {
@@ -722,7 +722,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
         error: () => {
           this.movieCards.set([]);
           this.movieTotal.set(0);
-          this.apiError.set('Nao foi possivel carregar os filmes da API.');
+          this.apiError.set('Não foi possível carregar os filmes da API.');
         },
         complete: () => this.isLoadingMovies.set(false),
       });
@@ -742,10 +742,13 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     this.recommendationApiService
       .saveFavoriteMovies(backendUserId, this.selectedMovieIds())
       .subscribe({
-        next: () => void this.router.navigateByUrl('/loading'),
+        next: () => {
+          this.participantSessionService.setSelectedMediatedMovieIds([]);
+          void this.router.navigateByUrl('/loading');
+        },
         error: () => {
           this.isSavingFavorites.set(false);
-          this.apiError.set('Nao foi possivel salvar os filmes favoritos. Tente novamente.');
+          this.apiError.set('Não foi possível salvar os filmes favoritos. Tente novamente.');
         },
         complete: () => this.isSavingFavorites.set(false),
       });
