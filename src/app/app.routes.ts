@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 
+import { blockParticipantEntryEditGuard } from './core/guards/participant-entry-edit.guard';
 import { ExperienceHostPage } from './features/experience-host/experience-host.page';
 import { LoadingPage } from './features/loading/loading.page';
 import { ParticipantEntryPage } from './features/participant-entry/participant-entry.page';
@@ -16,6 +17,7 @@ export const routes: Routes = [
   {
     path: 'participant-entry',
     component: ParticipantEntryPage,
+    canActivate: [blockParticipantEntryEditGuard],
   },
   {
     path: 'instructions',
