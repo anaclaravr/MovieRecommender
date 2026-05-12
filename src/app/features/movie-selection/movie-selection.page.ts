@@ -4,6 +4,7 @@ import {
   Component,
   ElementRef,
   HostListener,
+  OnDestroy,
   OnInit,
   ViewChild,
   computed,
@@ -14,6 +15,7 @@ import { Router } from '@angular/router';
 
 import { MovieApiService, MovieOrdering } from '../../core/api/movie-api.service';
 import { RecommendationApiService } from '../../core/api/recommendation-api.service';
+import { ExperienceTrackingService } from '../../core/services/experience-tracking.service';
 import { Movie } from '../../core/models/movie';
 import { ParticipantSessionService } from '../../core/services/participant-session.service';
 
@@ -46,6 +48,8 @@ const MOVIE_SELECTION_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 const DEFAULT_MOVIE_ORDERING: MovieOrdering = 'recentes_popularidade';
 const ALL_GENRES_ID: GenreFilterId = 'all';
+const SEARCH_TRACKING_DEBOUNCE_MS = 600;
+const MIN_SEARCH_TRACKING_LENGTH = 2;
 const GENRE_EDGE_HOVER_THRESHOLD = 96;
 const GENRE_DRAG_THRESHOLD = 6;
 const LIGHT_DETAILS_CARD_INDEXES = new Set([1, 6]);
@@ -194,18 +198,21 @@ function hasSameIds(left: number[], right: number[]): boolean {
   styleUrl: './movie-selection.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class MovieSelectionPage implements AfterViewInit, OnInit {
+export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   @ViewChild('genreScroller') private genreScroller?: ElementRef<HTMLDivElement>;
 
   private readonly participantSessionService = inject(ParticipantSessionService);
   private readonly movieApiService = inject(MovieApiService);
   private readonly recommendationApiService = inject(RecommendationApiService);
+  private readonly experienceTrackingService = inject(ExperienceTrackingService);
   private readonly router = inject(Router);
   private genreDragPointerId: number | null = null;
   private genreDragStartX = 0;
   private genreDragStartScrollLeft = 0;
   private shouldSuppressGenreClick = false;
   private readonly selectedMovieHydrationRequests = new Set<number>();
+  private searchTrackingTimer: ReturnType<typeof setTimeout> | null = null;
+  private lastTrackedSearchQuery = '';
 
   readonly selectionSteps = [1, 2, 3, 4, 5];
   readonly maxSelectedMovies = MAX_SELECTED_MOVIES;
@@ -323,10 +330,15 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
 
   ngOnInit(): void {
     this.loadMovies();
+    this.experienceTrackingService.trackExperienceStarted(this.trackingContext());
   }
 
   ngAfterViewInit(): void {
     this.scheduleGenreScrollStateUpdate();
+  }
+
+  ngOnDestroy(): void {
+    this.clearSearchTrackingTimer();
   }
 
   @HostListener('document:keydown.escape')
@@ -354,14 +366,21 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     this.searchQuery.set(query);
     this.resetMoviePagination();
     this.showSelectionLimitHint.set(false);
+    this.scheduleSearchTracking(query);
     this.loadMovies();
   }
 
   selectGenre(genreId: GenreFilterId): void {
+    const previousGenreId = this.activeGenreId();
+
     this.activeGenreId.set(genreId);
     this.resetMoviePagination();
     this.showSelectionLimitHint.set(false);
     this.loadMovies();
+
+    if (genreId !== previousGenreId) {
+      this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'genre_filter');
+    }
   }
 
   selectGenreFromClick(genreId: GenreFilterId, event: Event): void {
@@ -536,6 +555,8 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
       return;
     }
 
+    this.flushPendingSearchTracking();
+    this.trackMovieSelected(movieId);
     this.updateSelectedMovieIds([...selectedMovieIds, movieId]);
   }
 
@@ -572,6 +593,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     this.visualMovieOrderIds.set(visualMovieOrderIds);
     this.expandedMovieRowStart.set(visualMovieOrderIds.indexOf(movieId));
     this.expandedMovieId.set(movieId);
+    this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'details_opened');
   }
 
   closeExpandedDetails(): void {
@@ -617,6 +639,7 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
     }
 
     this.showContinueRequirementAlert.set(false);
+    this.flushPendingSearchTracking();
     this.saveFavoritesAndContinue();
   }
 
@@ -801,6 +824,77 @@ export class MovieSelectionPage implements AfterViewInit, OnInit {
   private resetMoviePagination(): void {
     this.moviePageIndex.set(0);
     this.closeExpandedDetails();
+  }
+
+  private scheduleSearchTracking(query: string): void {
+    this.clearSearchTrackingTimer();
+
+    const normalizedQuery = this.normalizedSearchQuery(query);
+
+    if (!this.shouldTrackSearchQuery(normalizedQuery)) {
+      return;
+    }
+
+    this.searchTrackingTimer = setTimeout(() => {
+      this.searchTrackingTimer = null;
+      this.trackSearchQuery(normalizedQuery);
+    }, SEARCH_TRACKING_DEBOUNCE_MS);
+  }
+
+  private flushPendingSearchTracking(): void {
+    if (!this.searchTrackingTimer) {
+      return;
+    }
+
+    this.clearSearchTrackingTimer();
+    this.trackSearchQuery(this.normalizedSearchQuery(this.searchQuery()));
+  }
+
+  private clearSearchTrackingTimer(): void {
+    if (!this.searchTrackingTimer) {
+      return;
+    }
+
+    clearTimeout(this.searchTrackingTimer);
+    this.searchTrackingTimer = null;
+  }
+
+  private trackSearchQuery(normalizedQuery: string): void {
+    if (!this.shouldTrackSearchQuery(normalizedQuery)) {
+      return;
+    }
+
+    this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'search');
+    this.lastTrackedSearchQuery = normalizedQuery;
+  }
+
+  private normalizedSearchQuery(query: string): string {
+    return query.trim().toLowerCase();
+  }
+
+  private shouldTrackSearchQuery(normalizedQuery: string): boolean {
+    return (
+      normalizedQuery.length >= MIN_SEARCH_TRACKING_LENGTH &&
+      normalizedQuery !== this.lastTrackedSearchQuery
+    );
+  }
+
+  private trackMovieSelected(movieId: number): void {
+    const card = this.movieCache().get(movieId);
+
+    if (!card) {
+      return;
+    }
+
+    this.experienceTrackingService.trackMovieSelected(this.trackingContext(), {
+      movieId: card.movie.id.toString(),
+      movieTitle: card.movie.title,
+      persuasiveStimulusType: 'none',
+    });
+  }
+
+  private trackingContext() {
+    return this.experienceTrackingService.createContext(this.session());
   }
 
   private scheduleGenreScrollStateUpdate(): void {
