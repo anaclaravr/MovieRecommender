@@ -257,21 +257,25 @@
                     </span>
                   </button>
 
-                  @if (isMovieSelected(card.movie.id)) {
-                    <span class="poster-card-shell__selected-badge" aria-hidden="true">
-                      <i class="pi pi-check"></i>
-                    </span>
-                  }
+                  @if (isMovieSelected(card.movie.id) || isDetailsExpanded(card.movie.id)) {
+                    <div class="poster-card-shell__top-actions">
+                      @if (isMovieSelected(card.movie.id)) {
+                        <span class="poster-card-shell__selected-badge" aria-hidden="true">
+                          <i class="pi pi-check"></i>
+                        </span>
+                      }
 
-                  @if (isDetailsExpanded(card.movie.id)) {
-                    <button
-                      class="poster-card-shell__close-details"
-                      type="button"
-                      aria-label="Fechar detalhes"
-                      (click)="closeExpandedDetails(); $event.stopPropagation()"
-                    >
-                      <i class="pi pi-times" aria-hidden="true"></i>
-                    </button>
+                      @if (isDetailsExpanded(card.movie.id)) {
+                        <button
+                          class="poster-card-shell__close-details"
+                          type="button"
+                          aria-label="Fechar detalhes"
+                          (click)="closeExpandedDetails(); $event.stopPropagation()"
+                        >
+                          <i class="pi pi-times" aria-hidden="true"></i>
+                        </button>
+                      }
+                    </div>
                   }
 
                   @if (isDetailsExpanded(card.movie.id)) {

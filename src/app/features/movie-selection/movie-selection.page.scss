@@ -856,40 +856,32 @@
 
 .poster-card-shell__close-details {
   appearance: none;
-  position: absolute;
-  top: 0.9rem;
-  right: 0.9rem;
-  z-index: 5;
   width: 2.15rem;
   height: 2.15rem;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   padding: 0;
-  border: 1px solid rgba(255, 255, 255, 0.52);
+  border: 0;
   border-radius: 0.8rem;
-  background: rgba(255, 255, 255, 0.34);
+  background: transparent;
   color: #fff;
   cursor: pointer;
-  box-shadow: 0 12px 24px rgba(8, 16, 24, 0.16);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  text-shadow: 0 8px 18px rgba(8, 16, 24, 0.28);
   transition:
-    background 130ms ease,
-    transform 130ms ease,
-    box-shadow 130ms ease;
+    color 130ms ease,
+    transform 130ms ease;
 }
 
 .poster-card-shell__close-details:hover {
   transform: translateY(-1px);
-  background: rgba(214, 224, 232, 0.48);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .poster-card-shell__close-details:focus-visible {
   outline: none;
-  box-shadow:
-    var(--state-focus-ring),
-    0 12px 24px rgba(8, 16, 24, 0.16);
+  box-shadow: var(--state-focus-ring);
 }
 
 .poster-card-shell__close-details .pi {
@@ -897,13 +889,20 @@
   line-height: 1;
 }
 
-.poster-card-shell__selected-badge {
+.poster-card-shell__top-actions {
   position: absolute;
   top: 0.7rem;
   right: 0.7rem;
-  z-index: 4;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.poster-card-shell__selected-badge {
   width: 2.1rem;
   height: 2.1rem;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1052,7 +1051,7 @@
   left: 0.9rem;
 }
 
-.poster-card-shell.is-details-expanded .poster-card-shell__selected-badge {
+.poster-card-shell.is-details-expanded .poster-card-shell__top-actions {
   top: 0.9rem;
   right: 0.9rem;
 }
