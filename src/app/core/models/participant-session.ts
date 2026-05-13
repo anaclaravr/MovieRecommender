@@ -34,6 +34,7 @@ export interface ParticipantSession {
   gender?: ParticipantGender;
   genderDetail?: string;
   selectedSeedMovieIds: number[];
+  selectedMediatedMovieIds: number[];
   selectedNeutralMovieIds: number[];
   experimentVariant: ExperimentVariant;
 }

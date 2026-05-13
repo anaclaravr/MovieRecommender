@@ -59,6 +59,7 @@ function createInitialSession(): ParticipantSession {
     name: '',
     email: undefined,
     selectedSeedMovieIds: [],
+    selectedMediatedMovieIds: [],
     selectedNeutralMovieIds: [],
     experimentVariant: 'mediated',
   };
@@ -80,6 +81,9 @@ function normalizeParticipantSession(value: unknown): ParticipantSession | null 
     typeof session.name !== 'string' ||
     !Array.isArray(session.selectedSeedMovieIds) ||
     !session.selectedSeedMovieIds.every((id) => typeof id === 'number') ||
+    (session.selectedMediatedMovieIds !== undefined &&
+      (!Array.isArray(session.selectedMediatedMovieIds) ||
+        !session.selectedMediatedMovieIds.every((id) => typeof id === 'number'))) ||
     (session.selectedNeutralMovieIds !== undefined &&
       (!Array.isArray(session.selectedNeutralMovieIds) ||
         !session.selectedNeutralMovieIds.every((id) => typeof id === 'number'))) ||
@@ -116,6 +120,7 @@ function normalizeParticipantSession(value: unknown): ParticipantSession | null 
     gender: session.gender,
     genderDetail: session.genderDetail,
     selectedSeedMovieIds: [...session.selectedSeedMovieIds],
+    selectedMediatedMovieIds: [...(session.selectedMediatedMovieIds ?? [])],
     selectedNeutralMovieIds: [...(session.selectedNeutralMovieIds ?? [])],
     experimentVariant,
   };
@@ -197,6 +202,13 @@ export class ParticipantSessionService {
     this.updateSession((session) => ({
       ...session,
       selectedSeedMovieIds: [...ids],
+    }));
+  }
+
+  setSelectedMediatedMovieIds(ids: number[]): void {
+    this.updateSession((session) => ({
+      ...session,
+      selectedMediatedMovieIds: Array.from(new Set(ids)),
     }));
   }
 

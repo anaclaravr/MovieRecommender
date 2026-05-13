@@ -3,11 +3,7 @@
     <div class="flow-nav">
       <nav class="flow-breadcrumb" aria-label="Caminho">
         <ol>
-          <li>
-            <button class="flow-breadcrumb__link" type="button" (click)="goToParticipantEntry()">
-              Entrada
-            </button>
-          </li>
+          <li>Entrada</li>
           <li>
             <button class="flow-breadcrumb__link" type="button" (click)="goToPreviousStep()">
               Instruções
@@ -18,7 +14,7 @@
       </nav>
 
       <div class="flow-nav__controls movie-selection-preview__controls">
-        <div class="selection-meter" aria-label="Contador de selecao">
+        <div class="selection-meter" aria-label="Contador de seleção">
           @for (step of selectionSteps; track step) {
             <div class="selection-step" [class.is-complete]="step <= selectedCount()">
               @if (step <= selectedCount()) {
@@ -91,7 +87,7 @@
           <button
             class="chip-row__edge-button chip-row__edge-button--left"
             type="button"
-            aria-label="Ver generos anteriores"
+            aria-label="Ver gêneros anteriores"
             (click)="scrollGenres('left')"
           >
             <i class="pi pi-chevron-left" aria-hidden="true"></i>
@@ -101,7 +97,7 @@
         <div
           #genreScroller
           class="chip-row__viewport"
-          aria-label="Filtro por genero"
+          aria-label="Filtro por gênero"
           (scroll)="updateGenreScrollState()"
           (pointerdown)="startGenreScrollDrag($event)"
           (pointermove)="moveGenreScrollDrag($event)"
@@ -127,7 +123,7 @@
           <button
             class="chip-row__edge-button chip-row__edge-button--right"
             type="button"
-            aria-label="Ver mais generos"
+            aria-label="Ver mais gêneros"
             (click)="scrollGenres('right')"
           >
             <i class="pi pi-chevron-right" aria-hidden="true"></i>
@@ -292,7 +288,7 @@
                       </div>
 
                       <div class="poster-card-shell__details-fact">
-                        <span class="text-overline">Generos</span>
+                        <span class="text-overline">Gêneros</span>
                         <p class="poster-card-shell__details-genres">{{ card.genresLabel }}</p>
                       </div>
                     </div>
@@ -368,7 +364,7 @@
         <div class="selection-drawer__header">
           <div>
             <h2>Filmes selecionados</h2>
-            <p>{{ selectedCount() }} de {{ maxSelectedMovies }} filmes escolhidos ate agora.</p>
+            <p>{{ selectedCount() }} de {{ maxSelectedMovies }} filmes escolhidos até agora.</p>
           </div>
           <button
             class="selection-drawer__close"
@@ -400,7 +396,7 @@
               <button
                 class="selection-drawer__remove"
                 type="button"
-                [attr.aria-label]="'Remover ' + card.movie.title + ' da selecao'"
+                [attr.aria-label]="'Remover ' + card.movie.title + ' da seleção'"
                 (click)="removeSelectedMovie(card.movie.id, $event)"
               >
                 <i class="pi pi-times" aria-hidden="true"></i>
