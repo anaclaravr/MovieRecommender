@@ -24,6 +24,7 @@ import { ParticipantSessionService } from '../../core/services/participant-sessi
 
 type GenreFilterId = 'all' | string;
 type DetailsContrast = 'dark';
+type MovieLoadingReason = 'initial' | 'search' | 'genre' | 'pagination' | 'pageSize';
 
 interface GenreFilterOption {
   id: GenreFilterId;
@@ -45,6 +46,7 @@ const MOVIE_PAGE_SIZE = 10;
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 const ALL_GENRES_ID: GenreFilterId = 'all';
 const SEARCH_TRACKING_DEBOUNCE_MS = 600;
+const SEARCH_APPLY_DEBOUNCE_MS = 300;
 const MIN_SEARCH_TRACKING_LENGTH = 2;
 const GENRE_EDGE_HOVER_THRESHOLD = 96;
 const GENRE_DRAG_THRESHOLD = 6;
@@ -199,12 +201,15 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
   private genreDragStartX = 0;
   private genreDragStartScrollLeft = 0;
   private shouldSuppressGenreClick = false;
+  private searchApplyTimer: ReturnType<typeof setTimeout> | null = null;
   private searchTrackingTimer: ReturnType<typeof setTimeout> | null = null;
   private lastTrackedSearchQuery = '';
+  private latestMovieRequestId = 0;
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly genreOptions = GENRE_OPTIONS;
   readonly session = this.participantSessionService.session;
+  readonly searchInputQuery = signal('');
   readonly searchQuery = signal('');
   readonly activeGenreId = signal<GenreFilterId>(ALL_GENRES_ID);
   readonly isDrawerOpen = signal(false);
@@ -222,7 +227,11 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
   readonly movieCache = signal<Map<number, NeutralMovieCard>>(new Map());
   readonly movieTotal = signal(0);
   readonly isLoadingMovies = signal(false);
+  readonly movieLoadingReason = signal<MovieLoadingReason>('initial');
   readonly apiError = signal('');
+  readonly movieSkeletonItems = computed(() =>
+    Array.from({ length: this.moviePageSize() }, (_, index) => index),
+  );
 
   readonly selectedMovieIds = computed(() =>
     normalizeSelectedMovieIds(this.session().selectedNeutralMovieIds),
@@ -295,7 +304,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-    this.loadMovies();
+    this.loadMovies('initial');
     this.experienceTrackingService.trackExperienceStarted(this.trackingContext());
   }
 
@@ -304,6 +313,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
   }
 
   ngOnDestroy(): void {
+    this.clearSearchApplyTimer();
     this.clearSearchTrackingTimer();
   }
 
@@ -329,10 +339,9 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
   }
 
   updateSearchQuery(query: string): void {
-    this.searchQuery.set(query);
-    this.resetMoviePagination();
+    this.searchInputQuery.set(query);
     this.scheduleSearchTracking(query);
-    this.loadMovies();
+    this.scheduleSearchApply(query);
   }
 
   selectGenre(genreId: GenreFilterId): void {
@@ -340,7 +349,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
 
     this.activeGenreId.set(genreId);
     this.resetMoviePagination();
-    this.loadMovies();
+    this.loadMovies('genre');
 
     if (genreId !== previousGenreId) {
       this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'genre_filter');
@@ -591,7 +600,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
 
     this.moviePageIndex.set(nextPageIndex);
     this.closeExpandedDetails();
-    this.loadMovies();
+    this.loadMovies('pagination');
   }
 
   updateMoviePageSize(size: string): void {
@@ -603,7 +612,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
 
     this.moviePageSize.set(pageSize);
     this.resetMoviePagination();
-    this.loadMovies();
+    this.loadMovies('pageSize');
   }
 
   goToPreviousMoviePage(): void {
@@ -638,8 +647,11 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
     return Math.max(0, cardIndex);
   }
 
-  private loadMovies(): void {
+  private loadMovies(reason: MovieLoadingReason): void {
+    const requestId = ++this.latestMovieRequestId;
+
     this.isLoadingMovies.set(true);
+    this.movieLoadingReason.set(reason);
     this.apiError.set('');
 
     this.movieApiService
@@ -651,6 +663,10 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
       })
       .subscribe({
         next: (page) => {
+          if (requestId !== this.latestMovieRequestId) {
+            return;
+          }
+
           const cards = page.items.map((movie, index) =>
             createNeutralMovieCard(
               movie,
@@ -668,11 +684,20 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
           this.scheduleGenreScrollStateUpdate();
         },
         error: () => {
+          if (requestId !== this.latestMovieRequestId) {
+            return;
+          }
+
           this.movieCards.set([]);
           this.movieTotal.set(0);
           this.apiError.set('Não foi possível carregar os filmes da API.');
+          this.isLoadingMovies.set(false);
         },
-        complete: () => this.isLoadingMovies.set(false),
+        complete: () => {
+          if (requestId === this.latestMovieRequestId) {
+            this.isLoadingMovies.set(false);
+          }
+        },
       });
   }
 
@@ -696,13 +721,38 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
     }, SEARCH_TRACKING_DEBOUNCE_MS);
   }
 
+  private scheduleSearchApply(query: string): void {
+    this.clearSearchApplyTimer();
+
+    this.searchApplyTimer = setTimeout(() => {
+      this.searchApplyTimer = null;
+
+      if (query === this.searchQuery()) {
+        return;
+      }
+
+      this.searchQuery.set(query);
+      this.resetMoviePagination();
+      this.loadMovies('search');
+    }, SEARCH_APPLY_DEBOUNCE_MS);
+  }
+
   private flushPendingSearchTracking(): void {
     if (!this.searchTrackingTimer) {
       return;
     }
 
     this.clearSearchTrackingTimer();
-    this.trackSearchQuery(this.normalizedSearchQuery(this.searchQuery()));
+    this.trackSearchQuery(this.normalizedSearchQuery(this.searchInputQuery()));
+  }
+
+  private clearSearchApplyTimer(): void {
+    if (!this.searchApplyTimer) {
+      return;
+    }
+
+    clearTimeout(this.searchApplyTimer);
+    this.searchApplyTimer = null;
   }
 
   private clearSearchTrackingTimer(): void {

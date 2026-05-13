@@ -151,6 +151,7 @@ export class RecommendationsPage implements OnInit {
   private readonly recommendationApiService = inject(RecommendationApiService);
   private readonly movieApiService = inject(MovieApiService);
   private readonly router = inject(Router);
+  private latestRecommendationsRequestId = 0;
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly session = this.participantSessionService.session;
@@ -159,6 +160,7 @@ export class RecommendationsPage implements OnInit {
   readonly recommendationsPageSize = signal(RECOMMENDATIONS_PAGE_SIZE);
   readonly seedMovieCards = signal<RecommendationCard[]>([]);
   readonly loadedRecommendationCards = signal<RecommendationCard[]>([]);
+  readonly isLoadingRecommendations = signal(false);
   readonly apiError = signal('');
   readonly selectedSeedMovieIds = computed(() => this.session().selectedSeedMovieIds.slice(0, 5));
   readonly selectedMediatedMovieIds = computed(() => this.session().selectedMediatedMovieIds);
@@ -192,6 +194,12 @@ export class RecommendationsPage implements OnInit {
     return `${firstItem} a ${lastItem} de ${total}`;
   });
   readonly showRecommendationsPagination = computed(() => this.recommendationCards().length > 0);
+  readonly recommendationSkeletonItems = computed(() =>
+    Array.from({ length: this.recommendationsPageSize() }, (_, index) => index),
+  );
+  readonly hasNoRecommendations = computed(
+    () => !this.isLoadingRecommendations() && this.recommendationCards().length === 0,
+  );
   readonly detailsCard = computed(() => {
     const expandedMovieId = this.expandedMovieId();
 
@@ -364,8 +372,17 @@ export class RecommendationsPage implements OnInit {
       return;
     }
 
+    const requestId = ++this.latestRecommendationsRequestId;
+
+    this.isLoadingRecommendations.set(true);
+    this.apiError.set('');
+
     this.recommendationApiService.listJoinedRecommendations(backendUserId).subscribe({
       next: (recommendations) => {
+        if (requestId !== this.latestRecommendationsRequestId) {
+          return;
+        }
+
         this.loadedRecommendationCards.set(
           addRecommendationBadges(
             recommendations.map((recommendation, index) =>
@@ -379,8 +396,18 @@ export class RecommendationsPage implements OnInit {
         );
       },
       error: () => {
+        if (requestId !== this.latestRecommendationsRequestId) {
+          return;
+        }
+
         this.loadedRecommendationCards.set([]);
         this.apiError.set('Não foi possível carregar as recomendações da API.');
+        this.isLoadingRecommendations.set(false);
+      },
+      complete: () => {
+        if (requestId === this.latestRecommendationsRequestId) {
+          this.isLoadingRecommendations.set(false);
+        }
       },
     });
   }

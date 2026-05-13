@@ -63,12 +63,23 @@
 }
 
 .neutral-experience-page__watch-button--expanded-poster {
+  margin-top: 0;
+  justify-self: auto;
+}
+
+.neutral-experience-page__expanded-actions {
   position: absolute;
   top: 0.9rem;
   right: 0.9rem;
-  z-index: 2;
-  margin-top: 0;
-  justify-self: auto;
+  z-index: 5;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.48rem;
+}
+
+.neutral-experience-page__expanded-actions .poster-card-shell__close-details {
+  position: static;
+  flex: 0 0 auto;
 }
 
 .neutral-experience-page__drawer-empty {
