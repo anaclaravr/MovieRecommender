@@ -19,7 +19,6 @@ import { Movie } from '../../core/models/movie';
 import { ParticipantSessionService } from '../../core/services/participant-session.service';
 
 type GenreFilterId = 'all' | string;
-type DetailsContrast = 'light' | 'dark';
 type MovieLoadingReason = 'initial' | 'search' | 'genre' | 'pagination' | 'ordering' | 'pageSize';
 
 interface GenreFilterOption {
@@ -32,7 +31,6 @@ interface MovieSelectionCard {
   movie: Movie;
   posterGradient: string;
   posterImage: string;
-  detailsContrast: DetailsContrast;
   genresLabel: string;
   durationLabel: string;
   ratingLabel: string;
@@ -53,7 +51,6 @@ const SEARCH_APPLY_DEBOUNCE_MS = 300;
 const MIN_SEARCH_TRACKING_LENGTH = 2;
 const GENRE_EDGE_HOVER_THRESHOLD = 96;
 const GENRE_DRAG_THRESHOLD = 6;
-const LIGHT_DETAILS_CARD_INDEXES = new Set([1, 6]);
 const POSTER_GRADIENTS = [
   'linear-gradient(160deg, #14344f 0%, #325b78 46%, #d2dfeb 100%)',
   'linear-gradient(160deg, #f0e8df 0%, #d4c6b1 48%, #8d6d4f 100%)',
@@ -178,8 +175,7 @@ function createMovieSelectionCard(movie: Movie, index: number): MovieSelectionCa
     movie,
     posterGradient: POSTER_GRADIENTS[index % POSTER_GRADIENTS.length],
     posterImage: `url("${movie.posterUrl ?? posterPlaceholder(movie.title)}")`,
-    detailsContrast: LIGHT_DETAILS_CARD_INDEXES.has(index) ? 'light' : 'dark',
-    genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' • '),
+    genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' · '),
     durationLabel: formatRuntime(movie.runtime),
     ratingLabel: formatRating(movie.averageRating),
   };

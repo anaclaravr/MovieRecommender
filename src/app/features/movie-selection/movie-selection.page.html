@@ -239,14 +239,8 @@
                   [style.--poster-image]="card.posterImage"
                 >
                   <button
-                    class="glass-button glass-button--compact poster-card-shell__details-pill"
+                    class="glass-button glass-button--compact poster-card-shell__details-pill poster-card-shell__details-pill--on-dark"
                     type="button"
-                    [class.poster-card-shell__details-pill--on-light]="
-                      card.detailsContrast === 'light'
-                    "
-                    [class.poster-card-shell__details-pill--on-dark]="
-                      card.detailsContrast === 'dark'
-                    "
                     (click)="toggleMovieDetails(card.movie.id, $event)"
                   >
                     <span class="glass-button__icon glass-button__icon--compact" aria-hidden="true">

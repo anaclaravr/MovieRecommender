@@ -170,7 +170,7 @@ function createNeutralMovieCard(movie: Movie, index: number): NeutralMovieCard {
     posterGradient: POSTER_GRADIENTS[index % POSTER_GRADIENTS.length],
     posterImage: `url("${movie.posterUrl ?? posterPlaceholder(movie.title)}")`,
     detailsContrast: 'dark',
-    genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' • '),
+    genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' · '),
     durationLabel: formatRuntime(movie.runtime),
     ratingLabel: formatRating(movie.averageRating),
   };
