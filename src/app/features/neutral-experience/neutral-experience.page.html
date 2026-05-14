@@ -44,9 +44,19 @@
           <input
             type="search"
             placeholder="Buscar filme"
-            [value]="searchQuery()"
+            [value]="searchInputQuery()"
             (input)="updateSearchQuery(($any($event.target).value ?? '').toString())"
           />
+          @if (searchInputQuery()) {
+            <button
+              class="search-shell__clear"
+              type="button"
+              aria-label="Limpar busca"
+              (click)="updateSearchQuery('')"
+            >
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          }
         </label>
       </div>
 
@@ -116,8 +126,19 @@
 
     <div class="movie-selection-preview__content">
       <div class="movie-selection-preview__main">
-        <div class="movie-grid">
-          @if (hasNoResults()) {
+        <div class="movie-grid" [attr.aria-busy]="isLoadingMovies()">
+          @if (isLoadingMovies()) {
+            @for (item of movieSkeletonItems(); track item) {
+              <article class="poster-card-shell poster-card-shell--skeleton" aria-hidden="true">
+                <div class="poster-card-shell__poster movie-skeleton"></div>
+                <div class="poster-card-shell__meta">
+                  <span class="movie-skeleton movie-skeleton--overline"></span>
+                  <span class="movie-skeleton movie-skeleton--title"></span>
+                  <span class="movie-skeleton movie-skeleton--text"></span>
+                </div>
+              </article>
+            }
+          } @else if (hasNoResults()) {
             <div class="movie-grid__empty glass-surface">
               <h2>Nenhum resultado encontrado</h2>
               <p>{{ emptyStateMessage() }}</p>
@@ -159,23 +180,39 @@
                   </button>
 
                   @if (isDetailsExpanded(card.movie.id)) {
-                    <button
-                      class="glass-button glass-button--light glass-button--compact neutral-experience-page__watch-button neutral-experience-page__watch-button--expanded-poster"
-                      type="button"
-                      [class.is-selected]="isMovieSelected(card.movie.id)"
-                      [attr.aria-pressed]="isMovieSelected(card.movie.id)"
-                      [attr.aria-label]="
-                        (isMovieSelected(card.movie.id) ? 'Remover ' : 'Marcar ') +
-                        card.movie.title +
-                        ' como assistiria'
-                      "
-                      (click)="toggleWouldWatch(card.movie.id, $event)"
-                    >
-                      <span class="glass-button__icon glass-button__icon--compact" aria-hidden="true">
-                        <i [class]="isMovieSelected(card.movie.id) ? 'pi pi-check' : 'pi pi-eye'"></i>
-                      </span>
-                      <span class="glass-button__content">Assistiria</span>
-                    </button>
+                    <div class="neutral-experience-page__expanded-actions">
+                      <button
+                        class="glass-button glass-button--light glass-button--compact neutral-experience-page__watch-button neutral-experience-page__watch-button--expanded-poster"
+                        type="button"
+                        [class.is-selected]="isMovieSelected(card.movie.id)"
+                        [attr.aria-pressed]="isMovieSelected(card.movie.id)"
+                        [attr.aria-label]="
+                          (isMovieSelected(card.movie.id) ? 'Remover ' : 'Marcar ') +
+                          card.movie.title +
+                          ' como assistiria'
+                        "
+                        (click)="toggleWouldWatch(card.movie.id, $event)"
+                      >
+                        <span
+                          class="glass-button__icon glass-button__icon--compact"
+                          aria-hidden="true"
+                        >
+                          <i
+                            [class]="isMovieSelected(card.movie.id) ? 'pi pi-check' : 'pi pi-eye'"
+                          ></i>
+                        </span>
+                        <span class="glass-button__content">Assistiria</span>
+                      </button>
+
+                      <button
+                        class="poster-card-shell__close-details"
+                        type="button"
+                        aria-label="Fechar detalhes"
+                        (click)="closeExpandedDetails(); $event.stopPropagation()"
+                      >
+                        <i class="pi pi-times" aria-hidden="true"></i>
+                      </button>
+                    </div>
                   }
 
                   @if (isDetailsExpanded(card.movie.id)) {
@@ -261,6 +298,7 @@
               <span>Filmes por página</span>
               <select
                 [value]="moviePageSize()"
+                [disabled]="isLoadingMovies()"
                 (change)="updateMoviePageSize(($any($event.target).value ?? '').toString())"
               >
                 @for (size of pageSizeOptions; track size) {
@@ -276,7 +314,7 @@
                 class="flow-pagination__icon-button"
                 type="button"
                 aria-label="Página anterior"
-                [disabled]="currentMoviePageIndex() === 0"
+                [disabled]="isLoadingMovies() || currentMoviePageIndex() === 0"
                 (click)="goToPreviousMoviePage()"
               >
                 <i class="pi pi-chevron-left" aria-hidden="true"></i>
@@ -288,7 +326,7 @@
                 class="flow-pagination__icon-button"
                 type="button"
                 aria-label="Próxima página"
-                [disabled]="currentMoviePageIndex() >= moviePageCount() - 1"
+                [disabled]="isLoadingMovies() || currentMoviePageIndex() >= moviePageCount() - 1"
                 (click)="goToNextMoviePage()"
               >
                 <i class="pi pi-chevron-right" aria-hidden="true"></i>

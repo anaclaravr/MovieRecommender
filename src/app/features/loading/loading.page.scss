@@ -203,6 +203,35 @@ p {
   box-shadow: 0 0 0 0.35rem rgba(163, 69, 164, 0.08);
 }
 
+.loading-error {
+  width: min(100%, 34rem);
+  margin: 1.75rem auto 0;
+  padding: 1.1rem;
+  display: grid;
+  gap: 0.9rem;
+  justify-items: center;
+  border-radius: 1.15rem;
+  text-align: center;
+}
+
+.loading-error__icon {
+  color: var(--color-accent-strong);
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+.loading-error p {
+  width: min(100%, 28rem);
+  font-size: 0.98rem;
+}
+
+.loading-error__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
 @keyframes icon-breathe {
   0%,
   100% {

@@ -93,8 +93,36 @@
         </div>
       </div>
 
-      <div class="recommendation-grid">
-        @for (card of paginatedRecommendationCards(); track card.movie.id) {
+      <div class="recommendation-grid" [attr.aria-busy]="isLoadingRecommendations()">
+        @if (isLoadingRecommendations()) {
+          @for (item of recommendationSkeletonItems(); track item) {
+            <article class="recommendation-card recommendation-card--skeleton glass-surface" aria-hidden="true">
+              <div class="recommendation-card__poster recommendation-skeleton"></div>
+              <div class="recommendation-card__body">
+                <div class="recommendation-card__title-row">
+                  <div class="recommendation-card__title-copy">
+                    <span class="recommendation-skeleton recommendation-skeleton--overline"></span>
+                    <span class="recommendation-skeleton recommendation-skeleton--title"></span>
+                    <span class="recommendation-skeleton recommendation-skeleton--text"></span>
+                  </div>
+                  <span class="recommendation-skeleton recommendation-skeleton--rating"></span>
+                </div>
+                <span class="recommendation-skeleton recommendation-skeleton--button"></span>
+              </div>
+            </article>
+          }
+        } @else if (hasNoRecommendations()) {
+          <div class="recommendations-empty glass-surface">
+            <h2>Nenhuma recomendação encontrada</h2>
+            <p>
+              {{
+                apiError() ||
+                  'Ainda não há recomendações disponíveis para este participante.'
+              }}
+            </p>
+          </div>
+        } @else {
+          @for (card of paginatedRecommendationCards(); track card.movie.id) {
           <article
             class="recommendation-card glass-surface"
             tabindex="0"
@@ -170,6 +198,7 @@
             </div>
           </article>
         }
+        }
       </div>
 
       @if (showRecommendationsPagination()) {
@@ -178,6 +207,7 @@
             <span>Filmes por página</span>
             <select
               [value]="recommendationsPageSize()"
+              [disabled]="isLoadingRecommendations()"
               (change)="updateRecommendationPageSize(($any($event.target).value ?? '').toString())"
             >
               @for (size of pageSizeOptions; track size) {
@@ -193,7 +223,7 @@
               class="flow-pagination__icon-button"
               type="button"
               aria-label="Página anterior"
-              [disabled]="currentRecommendationPageIndex() === 0"
+              [disabled]="isLoadingRecommendations() || currentRecommendationPageIndex() === 0"
               (click)="goToPreviousRecommendationPage()"
             >
               <i class="pi pi-chevron-left" aria-hidden="true"></i>
@@ -207,7 +237,10 @@
               class="flow-pagination__icon-button"
               type="button"
               aria-label="Próxima página"
-              [disabled]="currentRecommendationPageIndex() >= recommendationPageCount() - 1"
+              [disabled]="
+                isLoadingRecommendations() ||
+                currentRecommendationPageIndex() >= recommendationPageCount() - 1
+              "
               (click)="goToNextRecommendationPage()"
             >
               <i class="pi pi-chevron-right" aria-hidden="true"></i>

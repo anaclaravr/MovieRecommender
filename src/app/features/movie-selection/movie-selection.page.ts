@@ -14,13 +14,12 @@ import {
 import { Router } from '@angular/router';
 
 import { MovieApiService, MovieOrdering } from '../../core/api/movie-api.service';
-import { RecommendationApiService } from '../../core/api/recommendation-api.service';
 import { ExperienceTrackingService } from '../../core/services/experience-tracking.service';
 import { Movie } from '../../core/models/movie';
 import { ParticipantSessionService } from '../../core/services/participant-session.service';
 
 type GenreFilterId = 'all' | string;
-type DetailsContrast = 'light' | 'dark';
+type MovieLoadingReason = 'initial' | 'search' | 'genre' | 'pagination' | 'ordering' | 'pageSize';
 
 interface GenreFilterOption {
   id: GenreFilterId;
@@ -32,7 +31,6 @@ interface MovieSelectionCard {
   movie: Movie;
   posterGradient: string;
   posterImage: string;
-  detailsContrast: DetailsContrast;
   genresLabel: string;
   durationLabel: string;
   ratingLabel: string;
@@ -49,10 +47,10 @@ const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 const DEFAULT_MOVIE_ORDERING: MovieOrdering = 'recentes_popularidade';
 const ALL_GENRES_ID: GenreFilterId = 'all';
 const SEARCH_TRACKING_DEBOUNCE_MS = 600;
+const SEARCH_APPLY_DEBOUNCE_MS = 300;
 const MIN_SEARCH_TRACKING_LENGTH = 2;
 const GENRE_EDGE_HOVER_THRESHOLD = 96;
 const GENRE_DRAG_THRESHOLD = 6;
-const LIGHT_DETAILS_CARD_INDEXES = new Set([1, 6]);
 const POSTER_GRADIENTS = [
   'linear-gradient(160deg, #14344f 0%, #325b78 46%, #d2dfeb 100%)',
   'linear-gradient(160deg, #f0e8df 0%, #d4c6b1 48%, #8d6d4f 100%)',
@@ -177,8 +175,7 @@ function createMovieSelectionCard(movie: Movie, index: number): MovieSelectionCa
     movie,
     posterGradient: POSTER_GRADIENTS[index % POSTER_GRADIENTS.length],
     posterImage: `url("${movie.posterUrl ?? posterPlaceholder(movie.title)}")`,
-    detailsContrast: LIGHT_DETAILS_CARD_INDEXES.has(index) ? 'light' : 'dark',
-    genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' • '),
+    genresLabel: movie.genres.map((genre) => getGenreLabel(genre)).join(' · '),
     durationLabel: formatRuntime(movie.runtime),
     ratingLabel: formatRating(movie.averageRating),
   };
@@ -203,7 +200,6 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
 
   private readonly participantSessionService = inject(ParticipantSessionService);
   private readonly movieApiService = inject(MovieApiService);
-  private readonly recommendationApiService = inject(RecommendationApiService);
   private readonly experienceTrackingService = inject(ExperienceTrackingService);
   private readonly router = inject(Router);
   private genreDragPointerId: number | null = null;
@@ -212,7 +208,9 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   private shouldSuppressGenreClick = false;
   private readonly selectedMovieHydrationRequests = new Set<number>();
   private searchTrackingTimer: ReturnType<typeof setTimeout> | null = null;
+  private searchApplyTimer: ReturnType<typeof setTimeout> | null = null;
   private lastTrackedSearchQuery = '';
+  private latestMovieRequestId = 0;
 
   readonly selectionSteps = [1, 2, 3, 4, 5];
   readonly maxSelectedMovies = MAX_SELECTED_MOVIES;
@@ -221,6 +219,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   readonly genreOptions = GENRE_OPTIONS;
   readonly session = this.participantSessionService.session;
   readonly selectionLimitHint = SELECTION_LIMIT_HINT;
+  readonly searchInputQuery = signal('');
   readonly searchQuery = signal('');
   readonly activeMovieOrdering = signal<MovieOrdering>(DEFAULT_MOVIE_ORDERING);
   readonly activeGenreId = signal<GenreFilterId>(ALL_GENRES_ID);
@@ -241,8 +240,11 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   readonly movieCache = signal<Map<number, MovieSelectionCard>>(new Map());
   readonly movieTotal = signal(0);
   readonly isLoadingMovies = signal(false);
-  readonly isSavingFavorites = signal(false);
+  readonly movieLoadingReason = signal<MovieLoadingReason>('initial');
   readonly apiError = signal('');
+  readonly movieSkeletonItems = computed(() =>
+    Array.from({ length: this.moviePageSize() }, (_, index) => index),
+  );
 
   readonly selectedMovieIds = computed(() =>
     normalizeSelectedMovieIds(this.session().selectedSeedMovieIds),
@@ -329,7 +331,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   }
 
   ngOnInit(): void {
-    this.loadMovies();
+    this.loadMovies('initial');
     this.experienceTrackingService.trackExperienceStarted(this.trackingContext());
   }
 
@@ -338,6 +340,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   }
 
   ngOnDestroy(): void {
+    this.clearSearchApplyTimer();
     this.clearSearchTrackingTimer();
   }
 
@@ -363,11 +366,10 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   }
 
   updateSearchQuery(query: string): void {
-    this.searchQuery.set(query);
-    this.resetMoviePagination();
+    this.searchInputQuery.set(query);
     this.showSelectionLimitHint.set(false);
     this.scheduleSearchTracking(query);
-    this.loadMovies();
+    this.scheduleSearchApply(query);
   }
 
   selectGenre(genreId: GenreFilterId): void {
@@ -376,7 +378,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
     this.activeGenreId.set(genreId);
     this.resetMoviePagination();
     this.showSelectionLimitHint.set(false);
-    this.loadMovies();
+    this.loadMovies('genre');
 
     if (genreId !== previousGenreId) {
       this.experienceTrackingService.trackResourceUsed(this.trackingContext(), 'genre_filter');
@@ -402,7 +404,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
     this.activeMovieOrdering.set(ordering);
     this.resetMoviePagination();
     this.showSelectionLimitHint.set(false);
-    this.loadMovies();
+    this.loadMovies('ordering');
   }
 
   updateGenreScrollState(): void {
@@ -628,10 +630,6 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   }
 
   continueToLoading(): void {
-    if (this.isSavingFavorites()) {
-      return;
-    }
-
     if (!this.canContinue()) {
       this.showContinueRequirementAlert.set(true);
       this.showSelectionLimitHint.set(false);
@@ -640,7 +638,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
 
     this.showContinueRequirementAlert.set(false);
     this.flushPendingSearchTracking();
-    this.saveFavoritesAndContinue();
+    void this.router.navigateByUrl('/loading');
   }
 
   dismissContinueRequirementAlert(): void {
@@ -660,7 +658,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
 
     this.moviePageIndex.set(nextPageIndex);
     this.closeExpandedDetails();
-    this.loadMovies();
+    this.loadMovies('pagination');
   }
 
   updateMoviePageSize(size: string): void {
@@ -672,7 +670,7 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
 
     this.moviePageSize.set(pageSize);
     this.resetMoviePagination();
-    this.loadMovies();
+    this.loadMovies('pageSize');
   }
 
   goToPreviousMoviePage(): void {
@@ -711,8 +709,11 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
     return Math.max(0, cardIndex);
   }
 
-  private loadMovies(): void {
+  private loadMovies(reason: MovieLoadingReason): void {
+    const requestId = ++this.latestMovieRequestId;
+
     this.isLoadingMovies.set(true);
+    this.movieLoadingReason.set(reason);
     this.apiError.set('');
 
     this.movieApiService
@@ -725,6 +726,10 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
       })
       .subscribe({
         next: (page) => {
+          if (requestId !== this.latestMovieRequestId) {
+            return;
+          }
+
           const cards = page.items.map((movie, index) =>
             createMovieSelectionCard(
               movie,
@@ -743,37 +748,20 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
           this.scheduleGenreScrollStateUpdate();
         },
         error: () => {
+          if (requestId !== this.latestMovieRequestId) {
+            return;
+          }
+
           this.movieCards.set([]);
           this.movieTotal.set(0);
           this.apiError.set('Não foi possível carregar os filmes da API.');
+          this.isLoadingMovies.set(false);
         },
-        complete: () => this.isLoadingMovies.set(false),
-      });
-  }
-
-  private saveFavoritesAndContinue(): void {
-    const backendUserId = this.session().backendUserId;
-
-    if (!backendUserId) {
-      this.apiError.set('Crie o participante novamente antes de salvar os filmes.');
-      return;
-    }
-
-    this.isSavingFavorites.set(true);
-    this.apiError.set('');
-
-    this.recommendationApiService
-      .saveFavoriteMovies(backendUserId, this.selectedMovieIds())
-      .subscribe({
-        next: () => {
-          this.participantSessionService.setSelectedMediatedMovieIds([]);
-          void this.router.navigateByUrl('/loading');
+        complete: () => {
+          if (requestId === this.latestMovieRequestId) {
+            this.isLoadingMovies.set(false);
+          }
         },
-        error: () => {
-          this.isSavingFavorites.set(false);
-          this.apiError.set('Não foi possível salvar os filmes favoritos. Tente novamente.');
-        },
-        complete: () => this.isSavingFavorites.set(false),
       });
   }
 
@@ -841,13 +829,38 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
     }, SEARCH_TRACKING_DEBOUNCE_MS);
   }
 
+  private scheduleSearchApply(query: string): void {
+    this.clearSearchApplyTimer();
+
+    this.searchApplyTimer = setTimeout(() => {
+      this.searchApplyTimer = null;
+
+      if (query === this.searchQuery()) {
+        return;
+      }
+
+      this.searchQuery.set(query);
+      this.resetMoviePagination();
+      this.loadMovies('search');
+    }, SEARCH_APPLY_DEBOUNCE_MS);
+  }
+
   private flushPendingSearchTracking(): void {
     if (!this.searchTrackingTimer) {
       return;
     }
 
     this.clearSearchTrackingTimer();
-    this.trackSearchQuery(this.normalizedSearchQuery(this.searchQuery()));
+    this.trackSearchQuery(this.normalizedSearchQuery(this.searchInputQuery()));
+  }
+
+  private clearSearchApplyTimer(): void {
+    if (!this.searchApplyTimer) {
+      return;
+    }
+
+    clearTimeout(this.searchApplyTimer);
+    this.searchApplyTimer = null;
   }
 
   private clearSearchTrackingTimer(): void {

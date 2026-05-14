@@ -35,22 +35,12 @@
           <button
             class="glass-button glass-button--light glass-button--cta movie-selection-preview__continue-button"
             type="button"
-            [class.is-loading]="isSavingFavorites()"
-            [attr.aria-busy]="isSavingFavorites()"
             (click)="continueToLoading()"
           >
             <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
-              <i
-                [class]="
-                  isSavingFavorites()
-                    ? 'pi pi-spinner movie-selection-preview__loading-icon'
-                    : 'pi pi-arrow-right'
-                "
-              ></i>
+              <i class="pi pi-arrow-right"></i>
             </span>
-            <span class="glass-button__content">
-              {{ isSavingFavorites() ? 'Carregando...' : 'Continuar' }}
-            </span>
+            <span class="glass-button__content">Continuar</span>
           </button>
         </div>
       </div>
@@ -63,9 +53,19 @@
           <input
             type="search"
             placeholder="Buscar um filme"
-            [value]="searchQuery()"
+            [value]="searchInputQuery()"
             (input)="updateSearchQuery(($any($event.target).value ?? '').toString())"
           />
+          @if (searchInputQuery()) {
+            <button
+              class="search-shell__clear"
+              type="button"
+              aria-label="Limpar busca"
+              (click)="updateSearchQuery('')"
+            >
+              <i class="pi pi-times" aria-hidden="true"></i>
+            </button>
+          }
         </label>
       </div>
 
@@ -132,72 +132,88 @@
       </div>
     </header>
 
-    @if (showContinueRequirementAlert()) {
-      <aside
-        class="app-alert app-alert--warning movie-selection-preview__requirement-alert"
-        role="alert"
-      >
-        <i class="pi pi-exclamation-circle app-alert__icon" aria-hidden="true"></i>
-
-        <div class="app-alert__copy">
-          <strong>Selecione 5 filmes</strong>
-          <p>{{ continueRequirementMessage() }}</p>
-        </div>
-
-        <button
-          class="app-alert__dismiss"
-          type="button"
-          aria-label="Dispensar mensagem"
-          (click)="dismissContinueRequirementAlert()"
-        >
-          <i class="pi pi-times" aria-hidden="true"></i>
-        </button>
-      </aside>
-    }
-
-    @if (showSelectionLimitHint()) {
-      <aside class="app-alert app-alert--info movie-selection-preview__limit-hint" role="alert">
-        <i class="pi pi-info-circle app-alert__icon" aria-hidden="true"></i>
-
-        <div class="app-alert__copy">
-          <strong>Limite atingido</strong>
-          <p>{{ selectionLimitHint }}</p>
-        </div>
-
-        <button
-          class="app-alert__dismiss"
-          type="button"
-          aria-label="Dispensar mensagem"
-          (click)="dismissSelectionLimitHint()"
-        >
-          <i class="pi pi-times" aria-hidden="true"></i>
-        </button>
-      </aside>
-    }
-
     <div class="movie-selection-preview__content">
       <div class="movie-selection-preview__main">
         <div class="movie-selection-preview__ordering-row">
-          <span class="ordering-label" id="movie-ordering-label">
-            <i class="pi pi-sort-alt ordering-label__icon" aria-hidden="true"></i>
-            <span>Ordenar por</span>
-          </span>
+          <div class="movie-selection-preview__inline-alerts">
+            @if (showContinueRequirementAlert()) {
+              <aside
+                class="app-alert app-alert--warning movie-selection-preview__requirement-alert"
+                role="alert"
+              >
+                <i class="pi pi-exclamation-circle app-alert__icon" aria-hidden="true"></i>
 
-          <label class="ordering-shell glass-surface" aria-label="Ordenar filmes">
-            <select
-              aria-labelledby="movie-ordering-label"
-              [value]="activeMovieOrdering()"
-              (change)="updateMovieOrdering(($any($event.target).value ?? '').toString())"
-            >
-              @for (option of movieOrderingOptions; track option.id) {
-                <option [value]="option.id">{{ option.label }}</option>
-              }
-            </select>
-          </label>
+                <div class="app-alert__copy">
+                  <strong>Selecione 5 filmes</strong>
+                  <p>{{ continueRequirementMessage() }}</p>
+                </div>
+
+                <button
+                  class="app-alert__dismiss"
+                  type="button"
+                  aria-label="Dispensar mensagem"
+                  (click)="dismissContinueRequirementAlert()"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              </aside>
+            }
+
+            @if (showSelectionLimitHint()) {
+              <aside class="app-alert app-alert--info movie-selection-preview__limit-hint" role="alert">
+                <i class="pi pi-info-circle app-alert__icon" aria-hidden="true"></i>
+
+                <div class="app-alert__copy">
+                  <strong>Limite atingido</strong>
+                  <p>{{ selectionLimitHint }}</p>
+                </div>
+
+                <button
+                  class="app-alert__dismiss"
+                  type="button"
+                  aria-label="Dispensar mensagem"
+                  (click)="dismissSelectionLimitHint()"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              </aside>
+            }
+          </div>
+
+          <div class="movie-selection-preview__ordering-controls">
+            <span class="ordering-label" id="movie-ordering-label">
+              <i class="pi pi-sort-alt ordering-label__icon" aria-hidden="true"></i>
+              <span>Ordenar por</span>
+            </span>
+
+            <label class="ordering-shell glass-surface" aria-label="Ordenar filmes">
+              <select
+                aria-labelledby="movie-ordering-label"
+                [value]="activeMovieOrdering()"
+                [disabled]="isLoadingMovies()"
+                (change)="updateMovieOrdering(($any($event.target).value ?? '').toString())"
+              >
+                @for (option of movieOrderingOptions; track option.id) {
+                  <option [value]="option.id">{{ option.label }}</option>
+                }
+              </select>
+            </label>
+          </div>
         </div>
 
-        <div class="movie-grid">
-          @if (hasNoResults()) {
+        <div class="movie-grid" [attr.aria-busy]="isLoadingMovies()">
+          @if (isLoadingMovies()) {
+            @for (item of movieSkeletonItems(); track item) {
+              <article class="poster-card-shell poster-card-shell--skeleton" aria-hidden="true">
+                <div class="poster-card-shell__poster movie-skeleton"></div>
+                <div class="poster-card-shell__meta">
+                  <span class="movie-skeleton movie-skeleton--overline"></span>
+                  <span class="movie-skeleton movie-skeleton--title"></span>
+                  <span class="movie-skeleton movie-skeleton--text"></span>
+                </div>
+              </article>
+            }
+          } @else if (hasNoResults()) {
             <div class="movie-grid__empty glass-surface">
               <h2>Nenhum resultado encontrado</h2>
               <p>{{ emptyStateMessage() }}</p>
@@ -223,14 +239,8 @@
                   [style.--poster-image]="card.posterImage"
                 >
                   <button
-                    class="glass-button glass-button--compact poster-card-shell__details-pill"
+                    class="glass-button glass-button--compact poster-card-shell__details-pill poster-card-shell__details-pill--on-dark"
                     type="button"
-                    [class.poster-card-shell__details-pill--on-light]="
-                      card.detailsContrast === 'light'
-                    "
-                    [class.poster-card-shell__details-pill--on-dark]="
-                      card.detailsContrast === 'dark'
-                    "
                     (click)="toggleMovieDetails(card.movie.id, $event)"
                   >
                     <span class="glass-button__icon glass-button__icon--compact" aria-hidden="true">
@@ -241,10 +251,25 @@
                     </span>
                   </button>
 
-                  @if (isMovieSelected(card.movie.id)) {
-                    <span class="poster-card-shell__selected-badge" aria-hidden="true">
-                      <i class="pi pi-check"></i>
-                    </span>
+                  @if (isMovieSelected(card.movie.id) || isDetailsExpanded(card.movie.id)) {
+                    <div class="poster-card-shell__top-actions">
+                      @if (isMovieSelected(card.movie.id)) {
+                        <span class="poster-card-shell__selected-badge" aria-hidden="true">
+                          <i class="pi pi-check"></i>
+                        </span>
+                      }
+
+                      @if (isDetailsExpanded(card.movie.id)) {
+                        <button
+                          class="poster-card-shell__close-details"
+                          type="button"
+                          aria-label="Fechar detalhes"
+                          (click)="closeExpandedDetails(); $event.stopPropagation()"
+                        >
+                          <i class="pi pi-times" aria-hidden="true"></i>
+                        </button>
+                      }
+                    </div>
                   }
 
                   @if (isDetailsExpanded(card.movie.id)) {
@@ -310,6 +335,7 @@
               <span>Filmes por página</span>
               <select
                 [value]="moviePageSize()"
+                [disabled]="isLoadingMovies()"
                 (change)="updateMoviePageSize(($any($event.target).value ?? '').toString())"
               >
                 @for (size of pageSizeOptions; track size) {
@@ -325,7 +351,7 @@
                 class="flow-pagination__icon-button"
                 type="button"
                 aria-label="Página anterior"
-                [disabled]="currentMoviePageIndex() === 0"
+                [disabled]="isLoadingMovies() || currentMoviePageIndex() === 0"
                 (click)="goToPreviousMoviePage()"
               >
                 <i class="pi pi-chevron-left" aria-hidden="true"></i>
@@ -337,7 +363,7 @@
                 class="flow-pagination__icon-button"
                 type="button"
                 aria-label="Próxima página"
-                [disabled]="currentMoviePageIndex() >= moviePageCount() - 1"
+                [disabled]="isLoadingMovies() || currentMoviePageIndex() >= moviePageCount() - 1"
                 (click)="goToNextMoviePage()"
               >
                 <i class="pi pi-chevron-right" aria-hidden="true"></i>
@@ -420,22 +446,12 @@
           <button
             class="glass-button glass-button--light glass-button--cta movie-selection-preview__continue-button selection-drawer__continue-button"
             type="button"
-            [class.is-loading]="isSavingFavorites()"
-            [attr.aria-busy]="isSavingFavorites()"
             (click)="continueToLoading()"
           >
             <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
-              <i
-                [class]="
-                  isSavingFavorites()
-                    ? 'pi pi-spinner movie-selection-preview__loading-icon'
-                    : 'pi pi-arrow-right'
-                "
-              ></i>
+              <i class="pi pi-arrow-right"></i>
             </span>
-            <span class="glass-button__content">
-              {{ isSavingFavorites() ? 'Carregando...' : 'Continuar' }}
-            </span>
+            <span class="glass-button__content">Continuar</span>
           </button>
         </div>
       </aside>
