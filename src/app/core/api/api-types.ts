@@ -88,6 +88,10 @@ export interface ApiFeedbackCreate {
   presentation_helped_choice: number;
   platform_helped_find_interesting_movies: number;
   searched_more_information_before_final_choice: number;
+  platform_organization_influenced_choice: number;
+  felt_guided_by_platform: number;
+  presentation_attracted_attention_over_prior_interest: number;
+  additional_comments?: string | null;
 }
 
 export type ApiAgeRange =
@@ -136,4 +140,3 @@ function toApiEnumValue(value: string): string {
 
   return value.replaceAll('-', '_');
 }
-

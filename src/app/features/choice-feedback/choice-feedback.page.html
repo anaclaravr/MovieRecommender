@@ -8,7 +8,11 @@
     aria-hidden="true"
   ></div>
 
-  <main class="choice-feedback-page__frame">
+  <main
+    class="choice-feedback-page__frame"
+    [attr.inert]="submitSuccess() ? '' : null"
+    [attr.aria-hidden]="submitSuccess() ? 'true' : null"
+  >
     <div class="flow-nav">
       <nav class="flow-breadcrumb" aria-label="Caminho">
         <ol>
@@ -38,7 +42,7 @@
         <button
           class="glass-button glass-button--light glass-button--cta choice-feedback-page__submit-button"
           type="button"
-          [disabled]="isSubmitting()"
+          [disabled]="isSubmitDisabled()"
           (click)="submitQuestionnaire()"
         >
           <span class="glass-button__icon glass-button__icon--cta" aria-hidden="true">
@@ -65,12 +69,6 @@
         <p class="question-card__error" role="alert">{{ submitError() }}</p>
       }
 
-      @if (submitSuccess()) {
-        <p class="liked-section__empty glass-surface" role="status">
-          Questionário enviado com sucesso.
-        </p>
-      }
-
       @for (question of questions; track question.id) {
         <article
           class="question-card glass-surface"
@@ -95,6 +93,7 @@
                 class="likert-option"
                 type="button"
                 role="radio"
+                [disabled]="submitSuccess()"
                 [class.is-selected]="isAnswerSelected(question.id, option.value)"
                 [attr.aria-checked]="isAnswerSelected(question.id, option.value)"
                 [attr.aria-label]="option.value + ' - ' + option.label"
@@ -113,6 +112,49 @@
           }
         </article>
       }
+
+      <article class="question-card question-card--comments glass-surface">
+        <div class="question-card__heading">
+          <span class="question-card__number">
+            <i class="pi pi-comment" aria-hidden="true"></i>
+          </span>
+          <h2>Observação ou comentário adicional (opcional)</h2>
+        </div>
+
+        <label class="comment-field">
+          <textarea
+            rows="3"
+            aria-label="Observação ou comentário adicional"
+            [disabled]="submitSuccess()"
+            [attr.maxlength]="additionalCommentsMaxLength"
+            [value]="additionalComments()"
+            (input)="onAdditionalCommentsInput($event)"
+          ></textarea>
+          <span class="comment-field__counter">
+            {{ additionalComments().length }}/{{ additionalCommentsMaxLength }}
+          </span>
+        </label>
+      </article>
     </section>
   </main>
+
+  @if (submitSuccess()) {
+    <div class="feedback-success-modal-backdrop">
+      <section
+        class="feedback-success-modal glass-surface"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="feedback-success-title"
+        aria-describedby="feedback-success-description"
+      >
+        <span class="feedback-success-modal__icon" aria-hidden="true">
+          <i class="pi pi-check"></i>
+        </span>
+        <h2 id="feedback-success-title">Obrigado por participar da pesquisa</h2>
+        <p id="feedback-success-description">
+          Seu questionário foi enviado com sucesso.
+        </p>
+      </section>
+    </div>
+  }
 </section>

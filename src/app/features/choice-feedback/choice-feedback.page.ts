@@ -30,21 +30,40 @@ export class ChoiceFeedbackPage {
     { id: 2, text: 'Eu escolheria novamente os filmes selecionados.' },
     { id: 3, text: 'A escolha final refletiu minhas preferências pessoais.' },
     { id: 4, text: 'Foi difícil decidir quais filmes selecionar.' },
-    { id: 5, text: 'A forma como os filmes foram apresentados ajudou na minha escolha.' },
+    {
+      id: 5,
+      text: 'As informações apresentadas sobre os filmes me deram confiança para fazer minha escolha.',
+    },
     { id: 6, text: 'A plataforma me ajudou a encontrar filmes interessantes.' },
     {
       id: 7,
       text: 'Busquei mais informações sobre os filmes antes de finalizar minha escolha.',
     },
+    {
+      id: 8,
+      text: 'A forma como a plataforma organizou ou destacou os filmes influenciou minha escolha final.',
+    },
+    {
+      id: 9,
+      text: 'Senti que minha escolha foi guiada pela plataforma, além das minhas preferências pessoais.',
+    },
+    {
+      id: 10,
+      text: 'Alguns filmes chamaram minha atenção mais pela forma como foram apresentados do que pelo meu interesse prévio neles.',
+    },
   ];
   readonly likertOptions: LikertOption[] = [
     { value: 1, label: 'Discordo totalmente' },
     { value: 2, label: 'Discordo' },
-    { value: 3, label: 'Nem concordo nem discordo' },
-    { value: 4, label: 'Concordo' },
-    { value: 5, label: 'Concordo totalmente' },
+    { value: 3, label: 'Discordo um pouco' },
+    { value: 4, label: 'Neutro' },
+    { value: 5, label: 'Concordo um pouco' },
+    { value: 6, label: 'Concordo' },
+    { value: 7, label: 'Concordo totalmente' },
   ];
+  readonly additionalCommentsMaxLength = 500;
   readonly selectedAnswers = signal<Record<number, number>>({});
+  readonly additionalComments = signal('');
   readonly attemptedSubmit = signal(false);
   readonly isSubmitting = signal(false);
   readonly submitError = signal('');
@@ -55,6 +74,7 @@ export class ChoiceFeedbackPage {
   readonly canSubmit = computed(
     () => Object.keys(this.selectedAnswers()).length === this.questions.length,
   );
+  readonly isSubmitDisabled = computed(() => this.isSubmitting() || this.submitSuccess());
 
   goToParticipantEntry(): void {
     void this.router.navigateByUrl('/participant-entry');
@@ -89,7 +109,23 @@ export class ChoiceFeedbackPage {
     return this.attemptedSubmit() && this.selectedAnswers()[questionId] === undefined;
   }
 
+  onAdditionalCommentsInput(event: Event): void {
+    const textarea = event.target as HTMLTextAreaElement;
+    const value = textarea.value.slice(0, this.additionalCommentsMaxLength);
+
+    if (textarea.value !== value) {
+      textarea.value = value;
+    }
+
+    this.additionalComments.set(value);
+    this.resizeAdditionalComments(textarea);
+  }
+
   submitQuestionnaire(): void {
+    if (this.submitSuccess() || this.isSubmitting()) {
+      return;
+    }
+
     this.attemptedSubmit.set(true);
     this.submitError.set('');
     this.submitSuccess.set(false);
@@ -118,11 +154,32 @@ export class ChoiceFeedbackPage {
         presentation_helped_choice: answers[5],
         platform_helped_find_interesting_movies: answers[6],
         searched_more_information_before_final_choice: answers[7],
+        platform_organization_influenced_choice: answers[8],
+        felt_guided_by_platform: answers[9],
+        presentation_attracted_attention_over_prior_interest: answers[10],
+        additional_comments: this.getAdditionalCommentsPayload(),
       })
       .subscribe({
         next: () => this.submitSuccess.set(true),
         error: () => this.submitError.set('Não foi possível enviar o questionário. Tente novamente.'),
         complete: () => this.isSubmitting.set(false),
       });
+  }
+
+  private getAdditionalCommentsPayload(): string | null {
+    const comments = this.additionalComments().trim();
+    return comments ? comments : null;
+  }
+
+  private resizeAdditionalComments(textarea: HTMLTextAreaElement): void {
+    const styles = window.getComputedStyle(textarea);
+    const lineHeight = Number.parseFloat(styles.lineHeight) || 24;
+    const verticalPadding =
+      Number.parseFloat(styles.paddingTop) + Number.parseFloat(styles.paddingBottom);
+    const maxHeight = lineHeight * 4 + verticalPadding;
+
+    textarea.style.height = 'auto';
+    textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
+    textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
   }
 }
