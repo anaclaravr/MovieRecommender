@@ -64,6 +64,19 @@
       </div>
     </header>
 
+    <aside class="choice-feedback-notice" role="note">
+      <span class="choice-feedback-notice__icon" aria-hidden="true">
+        <i class="pi pi-check-circle"></i>
+      </span>
+      <div class="choice-feedback-notice__copy">
+        <h2>Responda com sinceridade</h2>
+        <p>
+          Responda de acordo com sua experiência real. Isso ajuda a medir os resultados com mais
+          precisão e torna a pesquisa mais confiável.
+        </p>
+      </div>
+    </aside>
+
     <section class="questionnaire-section" aria-label="Perguntas do questionário">
       @if (submitError()) {
         <p class="question-card__error" role="alert">{{ submitError() }}</p>

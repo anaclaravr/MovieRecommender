@@ -190,26 +190,18 @@
 }
 
 .instructions-step-grid {
+  --instructions-step-row-height: 3.6rem;
   position: relative;
   display: grid;
   gap: 0;
   padding-left: 1.16rem;
 }
 
-.instructions-step-grid::before {
-  content: '';
-  position: absolute;
-  top: 1.1rem;
-  bottom: 1.1rem;
-  left: 1.16rem;
-  width: 1px;
-  background: rgba(163, 69, 164, 0.18);
-}
-
 .instructions-step {
   position: relative;
   min-width: 0;
-  padding: 0 0 1.15rem 1.6rem;
+  min-height: var(--instructions-step-row-height);
+  padding: 0 0 0.75rem 1.6rem;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.75rem;
@@ -218,6 +210,16 @@
 
 .instructions-step:last-child {
   padding-bottom: 0;
+}
+
+.instructions-step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  top: 2.2rem;
+  bottom: 0;
+  left: -0.06rem;
+  width: 1px;
+  background: rgba(163, 69, 164, 0.18);
 }
 
 .instructions-step__number {
@@ -236,7 +238,9 @@
 
 .instructions-step div {
   min-width: 0;
+  min-height: 2.2rem;
   display: grid;
+  align-content: center;
   gap: 0.35rem;
   grid-column: 2;
 }
@@ -247,7 +251,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 0.75rem;
-  align-items: start;
+  align-items: center;
   border-top: 1px solid rgba(55, 62, 67, 0.08);
 }
 
