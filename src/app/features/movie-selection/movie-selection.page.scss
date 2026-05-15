@@ -126,6 +126,11 @@
   font-size: var(--font-size-body);
 }
 
+.search-shell input::-webkit-search-cancel-button,
+.search-shell input::-webkit-search-decoration {
+  appearance: none;
+}
+
 .search-shell input::placeholder {
   color: var(--color-text-muted);
 }
