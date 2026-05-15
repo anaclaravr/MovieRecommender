@@ -13,7 +13,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { MovieApiService } from '../../core/api/movie-api.service';
+import { MovieApiService, MovieOrdering } from '../../core/api/movie-api.service';
 import {
   SelectedStimulusSummary,
   createEmptySelectedStimulusSummary,
@@ -43,6 +43,7 @@ interface NeutralMovieCard {
 }
 
 const MOVIE_PAGE_SIZE = 10;
+const NEUTRAL_SEARCH_ORDERING: MovieOrdering = 'relevancia_neutra';
 const PAGE_SIZE_OPTIONS = [10, 20, 30] as const;
 const ALL_GENRES_ID: GenreFilterId = 'all';
 const SEARCH_TRACKING_DEBOUNCE_MS = 600;
@@ -649,6 +650,7 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
 
   private loadMovies(reason: MovieLoadingReason): void {
     const requestId = ++this.latestMovieRequestId;
+    const searchTitle = this.searchQuery().trim();
 
     this.isLoadingMovies.set(true);
     this.movieLoadingReason.set(reason);
@@ -658,8 +660,9 @@ export class NeutralExperiencePage implements AfterViewInit, OnDestroy, OnInit {
       .listMovies({
         page: this.currentMoviePageIndex() + 1,
         size: this.moviePageSize(),
-        titulo: this.searchQuery().trim() || undefined,
+        titulo: searchTitle || undefined,
         genero: this.activeGenreId() === ALL_GENRES_ID ? undefined : this.activeGenreId(),
+        ordenacao: searchTitle ? NEUTRAL_SEARCH_ORDERING : undefined,
       })
       .subscribe({
         next: (page) => {

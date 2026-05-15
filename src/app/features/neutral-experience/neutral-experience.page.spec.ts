@@ -97,7 +97,9 @@ describe('NeutralExperiencePage', () => {
     const requests = httpMock.match((req) => req.url.endsWith('/filmes/'));
     expect(requests.length).toBe(2);
     expect(requests[0].request.params.get('titulo')).toBe('inter');
+    expect(requests[0].request.params.get('ordenacao')).toBe('relevancia_neutra');
     expect(requests[1].request.params.get('titulo')).toBe('matrix');
+    expect(requests[1].request.params.get('ordenacao')).toBe('relevancia_neutra');
 
     requests[0].flush({
       items: [toApiMovie(MOCK_MOVIES[6])],
@@ -132,8 +134,9 @@ describe('NeutralExperiencePage', () => {
     expectedGenre?: string,
   ): void {
     const request = httpMock.expectOne((req) => req.url.endsWith('/filmes/'));
+    const expectedOrdering = expectedTitle ? 'relevancia_neutra' : undefined;
 
-    expect(request.request.params.has('ordenacao')).toBe(false);
+    expect(request.request.params.get('ordenacao') ?? undefined).toBe(expectedOrdering);
     expect(request.request.params.get('page')).toBe(expectedPage.toString());
     expect(request.request.params.get('titulo') ?? undefined).toBe(expectedTitle);
     expect(request.request.params.get('genero') ?? undefined).toBe(expectedGenre);

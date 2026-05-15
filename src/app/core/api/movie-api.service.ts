@@ -6,7 +6,10 @@ import { Movie } from '../models/movie';
 import { API_BASE_URL } from './api.config';
 import { ApiMovie, ApiPage } from './api-types';
 
-export type MovieOrdering = 'recentes_popularidade' | 'popularidade_recentes';
+export type MovieOrdering =
+  | 'recentes_popularidade'
+  | 'popularidade_recentes'
+  | 'relevancia_neutra';
 
 export interface MovieListParams {
   page: number;
