@@ -32,7 +32,13 @@ interface RecommendationCard {
   rank: number;
   rankLabel: string;
   mediatedCue: string;
-  ratingBadgeLabel: string;
+  evidenceBadges: RecommendationEvidenceBadge[];
+}
+
+interface RecommendationEvidenceBadge {
+  label: string;
+  iconClass: string;
+  tone: 'affinity' | 'popular' | 'trusted' | 'top-rated' | 'runtime' | 'period';
 }
 
 const RECOMMENDATIONS_PAGE_SIZE = 10;
@@ -70,11 +76,13 @@ const GENRE_LABELS: Record<string, string> = {
 };
 const TOP_RECOMMENDATION_CUES = [
   'Melhor correspondência para você',
-  'Muito próximo do seu perfil',
   'Boa chance de agradar',
+  'Entre os 3 mais compatíveis',
 ] as const;
 const TOP_RATED_BADGE_LABEL = 'Mais bem avaliado';
 const FALLBACK_DIRECTOR = 'Direção não informada';
+const MAX_EVIDENCE_BADGES = 1;
+const HIGHLIGHT_PERCENTILE = 0.2;
 
 function getGenreLabel(genre: string): string {
   return GENRE_LABELS[genre] ?? genre;
@@ -117,7 +125,7 @@ function createRecommendationCard(movie: Movie, index: number, rankOverride?: nu
     rank,
     rankLabel: rank <= 3 ? `#${rank}` : '',
     mediatedCue: TOP_RECOMMENDATION_CUES[rank - 1] ?? '',
-    ratingBadgeLabel: '',
+    evidenceBadges: [],
   };
 }
 
@@ -128,15 +136,104 @@ function getRatingValue(card: RecommendationCard): number {
 }
 
 function addRecommendationBadges(cards: RecommendationCard[]): RecommendationCard[] {
-  const highestRatedCard = cards
-    .slice()
-    .sort((left, right) => getRatingValue(right) - getRatingValue(left))[0];
+  const popularMovieIds = topMovieIdsByMetric(cards, (card) => card.movie.popularity ?? 0);
+  const oftenRatedMovieIds = topMovieIdsByMetric(cards, (card) => card.movie.ratingCount);
 
   return cards.map((card) => ({
     ...card,
-    ratingBadgeLabel:
-      highestRatedCard && card.movie.id === highestRatedCard.movie.id ? TOP_RATED_BADGE_LABEL : '',
+    evidenceBadges: createEvidenceBadges(card, popularMovieIds, oftenRatedMovieIds),
   }));
+}
+
+function topMovieIdsByMetric(
+  cards: RecommendationCard[],
+  getMetricValue: (card: RecommendationCard) => number,
+): Set<number> {
+  const rankedCards = cards
+    .filter((card) => getMetricValue(card) > 0)
+    .slice()
+    .sort((left, right) => getMetricValue(right) - getMetricValue(left));
+  const highlightCount = Math.ceil(rankedCards.length * HIGHLIGHT_PERCENTILE);
+
+  return new Set(rankedCards.slice(0, highlightCount).map((card) => card.movie.id));
+}
+
+function createEvidenceBadges(
+  card: RecommendationCard,
+  popularMovieIds: Set<number>,
+  oftenRatedMovieIds: Set<number>,
+): RecommendationEvidenceBadge[] {
+  const badges: RecommendationEvidenceBadge[] = [];
+
+  if (popularMovieIds.has(card.movie.id)) {
+    badges.push({
+      label: 'Popular entre usuários',
+      iconClass: 'pi pi-users',
+      tone: 'popular',
+    });
+  }
+
+  if (oftenRatedMovieIds.has(card.movie.id)) {
+    badges.push({
+      label: 'Muitas avaliações',
+      iconClass: 'pi pi-chart-bar',
+      tone: 'trusted',
+    });
+  }
+
+  if (card.movie.year !== undefined && card.movie.year >= 1990 && card.movie.year <= 1999) {
+    badges.push({
+      label: 'Anos 90',
+      iconClass: 'pi pi-calendar',
+      tone: 'period',
+    });
+  } else if (card.movie.year !== undefined && card.movie.year <= 1989) {
+    badges.push({
+      label: 'Clássico',
+      iconClass: 'pi pi-calendar',
+      tone: 'period',
+    });
+  }
+
+  return badges.slice(0, MAX_EVIDENCE_BADGES);
+}
+
+function topRatedEvidenceBadge(): RecommendationEvidenceBadge {
+  return {
+    label: TOP_RATED_BADGE_LABEL,
+    iconClass: 'pi pi-star-fill',
+    tone: 'top-rated',
+  };
+}
+
+function addPageScopedTopRatedBadge(cards: RecommendationCard[]): RecommendationCard[] {
+  const highestRatedCard = cards.reduce<RecommendationCard | null>((highestRated, card) => {
+    const ratingValue = getRatingValue(card);
+
+    if (ratingValue < 0) {
+      return highestRated;
+    }
+
+    if (!highestRated || ratingValue > getRatingValue(highestRated)) {
+      return card;
+    }
+
+    return highestRated;
+  }, null);
+
+  if (!highestRatedCard) {
+    return cards;
+  }
+
+  return cards.map((card) =>
+    card.movie.id === highestRatedCard.movie.id
+      ? { ...card, evidenceBadges: [topRatedEvidenceBadge()] }
+      : card,
+  );
+}
+
+function hasTopRatedBadge(card: RecommendationCard): boolean {
+  return card.evidenceBadges.some((badge) => badge.label === TOP_RATED_BADGE_LABEL);
 }
 
 @Component({
@@ -152,6 +249,7 @@ export class RecommendationsPage implements OnInit {
   private readonly movieApiService = inject(MovieApiService);
   private readonly router = inject(Router);
   private latestRecommendationsRequestId = 0;
+  private readonly selectedStimulusTypes = new Map<number, PersuasiveStimulusType>();
 
   readonly pageSizeOptions = PAGE_SIZE_OPTIONS;
   readonly session = this.participantSessionService.session;
@@ -175,9 +273,11 @@ export class RecommendationsPage implements OnInit {
   readonly paginatedRecommendationCards = computed(() => {
     const startIndex = this.currentRecommendationPageIndex() * this.recommendationsPageSize();
 
-    return this.recommendationCards().slice(
-      startIndex,
-      startIndex + this.recommendationsPageSize(),
+    return addPageScopedTopRatedBadge(
+      this.recommendationCards().slice(
+        startIndex,
+        startIndex + this.recommendationsPageSize(),
+      ),
     );
   });
   readonly recommendationPaginationRangeLabel = computed(() => {
@@ -428,15 +528,18 @@ export class RecommendationsPage implements OnInit {
     const card = this.recommendationCards().find(
       (recommendationCard) => recommendationCard.movie.id === movieId,
     );
+    const stimulusType = this.persuasiveStimulusTypeForMovie(movieId);
 
     if (!card) {
       return;
     }
 
+    this.selectedStimulusTypes.set(movieId, stimulusType);
+
     this.experienceTrackingService.trackMovieSelected(this.trackingContext(), {
       movieId: card.movie.id.toString(),
       movieTitle: card.movie.title,
-      persuasiveStimulusType: this.persuasiveStimulusTypeForCard(card),
+      persuasiveStimulusType: stimulusType,
     });
   }
 
@@ -444,7 +547,8 @@ export class RecommendationsPage implements OnInit {
     const summary = createEmptySelectedStimulusSummary();
 
     for (const movieId of selectedMovieIds) {
-      const stimulusType = this.persuasiveStimulusTypeForMovie(movieId);
+      const stimulusType =
+        this.selectedStimulusTypes.get(movieId) ?? this.persuasiveStimulusTypeForMovie(movieId);
 
       summary[stimulusType] += 1;
     }
@@ -453,7 +557,9 @@ export class RecommendationsPage implements OnInit {
   }
 
   private persuasiveStimulusTypeForMovie(movieId: number): PersuasiveStimulusType {
-    const card = this.recommendationCards().find(
+    const card = this.paginatedRecommendationCards().find(
+      (recommendationCard) => recommendationCard.movie.id === movieId,
+    ) ?? this.recommendationCards().find(
       (recommendationCard) => recommendationCard.movie.id === movieId,
     );
 
@@ -461,6 +567,10 @@ export class RecommendationsPage implements OnInit {
   }
 
   private persuasiveStimulusTypeForCard(card: RecommendationCard): PersuasiveStimulusType {
+    if (hasTopRatedBadge(card)) {
+      return 'best_rated';
+    }
+
     if (card.rank === 1) {
       return 'top_1';
     }
@@ -471,10 +581,6 @@ export class RecommendationsPage implements OnInit {
 
     if (card.rank === 3) {
       return 'top_3';
-    }
-
-    if (card.ratingBadgeLabel) {
-      return 'best_rated';
     }
 
     return 'recommended_for_you';

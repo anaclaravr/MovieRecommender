@@ -145,38 +145,45 @@
                 <span class="recommendation-card__rank">{{ card.rankLabel }}</span>
               }
 
-              @if (card.ratingBadgeLabel) {
-                <span class="recommendation-card__quality-label">
-                  <i class="pi pi-star-fill" aria-hidden="true"></i>
-                  <span>{{ card.ratingBadgeLabel }}</span>
-                </span>
-              }
+              <span class="recommendation-card__poster-rating" aria-label="Nota {{ card.ratingLabel }}">
+                <i class="pi pi-star-fill" aria-hidden="true"></i>
+                <strong>{{ card.ratingLabel }}</strong>
+              </span>
 
               <div class="recommendation-card__poster-chips">
-                @if (card.mediatedCue) {
-                  <span class="recommendation-card__poster-chip">{{ card.mediatedCue }}</span>
-                }
-
-                @if (!isTopRecommendation(card)) {
-                  <span class="recommendation-card__poster-chip">Recomendado pelo seu perfil</span>
-                }
+                <span class="recommendation-card__poster-chip">
+                  <i class="pi pi-sparkles" aria-hidden="true"></i>
+                  <span>{{
+                    card.mediatedCue || 'Recomendado pelo seu perfil'
+                  }}</span>
+                </span>
               </div>
             </div>
 
             <div class="recommendation-card__body">
               <div class="recommendation-card__title-row">
                 <div class="recommendation-card__title-copy">
+                  @if (card.evidenceBadges.length) {
+                    <div class="recommendation-card__evidence-badges" aria-label="Destaques da recomendação">
+                      @for (badge of card.evidenceBadges; track badge.label) {
+                        <span
+                          [attr.class]="
+                            'recommendation-card__evidence-badge recommendation-card__evidence-badge--' +
+                            badge.tone
+                          "
+                        >
+                          <i [class]="badge.iconClass" aria-hidden="true"></i>
+                          <span>{{ badge.label }}</span>
+                        </span>
+                      }
+                    </div>
+                  }
+
                   <span class="text-overline recommendation-card__year-overline">
                     {{ card.movie.year }}
                   </span>
                   <h3 class="recommendation-card__title">{{ card.movie.title }}</h3>
                   <p class="recommendation-card__genres">{{ card.genresLabel }}</p>
-                </div>
-
-                <div class="recommendation-card__rating">
-                  <i class="pi pi-star-fill" aria-hidden="true"></i>
-                  <span>Nota</span>
-                  <strong>{{ card.ratingLabel }}</strong>
                 </div>
               </div>
 
