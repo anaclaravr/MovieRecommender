@@ -70,4 +70,18 @@ describe('LoadingPage', () => {
     );
     expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
+
+  it('restarts the registration from loading errors', () => {
+    const fixture = TestBed.createComponent(LoadingPage);
+    const component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    const request = httpMock.expectOne((req) => req.url.endsWith('/users/42/favoritos/'));
+    request.flush('Erro', { status: 500, statusText: 'Server Error' });
+
+    component.restartRegistration();
+
+    expect(participantSessionService.session().backendUserId).toBeUndefined();
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/participant-entry');
+  });
 });

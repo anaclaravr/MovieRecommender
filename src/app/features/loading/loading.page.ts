@@ -44,8 +44,9 @@ export class LoadingPage implements OnInit, OnDestroy {
     this.saveFavoritesSubscription?.unsubscribe();
   }
 
-  retrySaveFavorites(): void {
-    this.saveFavorites();
+  restartRegistration(): void {
+    this.participantSessionService.reset();
+    void this.router.navigateByUrl('/participant-entry');
   }
 
   goBackToMovieSelection(): void {
