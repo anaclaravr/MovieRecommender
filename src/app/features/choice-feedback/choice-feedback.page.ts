@@ -1,4 +1,14 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  AfterViewInit,
+  ChangeDetectionStrategy,
+  Component,
+  ElementRef,
+  QueryList,
+  ViewChildren,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { Router } from '@angular/router';
 
 import { FeedbackApiService } from '../../core/api/feedback-api.service';
@@ -14,44 +24,37 @@ interface FeedbackQuestion {
   text: string;
 }
 
+const BASE_FEEDBACK_QUESTIONS: FeedbackQuestion[] = [
+  { id: 1, text: 'Estou satisfeito(a) com os filmes que selecionei.' },
+  { id: 2, text: 'Eu escolheria novamente os filmes selecionados.' },
+  { id: 3, text: 'A escolha final refletiu minhas preferências pessoais.' },
+  { id: 4, text: 'Foi difícil decidir quais filmes selecionar.' },
+  { id: 5, text: 'A forma como os filmes foram apresentados me ajudou nas minhas escolhas.' },
+  { id: 6, text: 'A plataforma me ajudou a encontrar filmes interessantes.' },
+  {
+    id: 7,
+    text: 'Busquei mais informações sobre os filmes antes de finalizar minha escolha.',
+  },
+];
+
+const MEDIATED_FEEDBACK_QUESTION: FeedbackQuestion = {
+  id: 8,
+  text: 'As sugestões da plataforma me guiaram, mas a decisão final foi totalmente minha.',
+};
+
 @Component({
   selector: 'app-choice-feedback-page',
   templateUrl: './choice-feedback.page.html',
   styleUrl: './choice-feedback.page.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class ChoiceFeedbackPage {
+export class ChoiceFeedbackPage implements AfterViewInit {
+  @ViewChildren('likertScale') private likertScales?: QueryList<ElementRef<HTMLDivElement>>;
+
   private readonly router = inject(Router);
   private readonly participantSessionService = inject(ParticipantSessionService);
   private readonly feedbackApiService = inject(FeedbackApiService);
 
-  readonly questions: FeedbackQuestion[] = [
-    { id: 1, text: 'Estou satisfeito(a) com os filmes que selecionei.' },
-    { id: 2, text: 'Eu escolheria novamente os filmes selecionados.' },
-    { id: 3, text: 'A escolha final refletiu minhas preferências pessoais.' },
-    { id: 4, text: 'Foi difícil decidir quais filmes selecionar.' },
-    {
-      id: 5,
-      text: 'As informações apresentadas sobre os filmes me deram confiança para fazer minha escolha.',
-    },
-    { id: 6, text: 'A plataforma me ajudou a encontrar filmes interessantes.' },
-    {
-      id: 7,
-      text: 'Busquei mais informações sobre os filmes antes de finalizar minha escolha.',
-    },
-    {
-      id: 8,
-      text: 'A forma como a plataforma organizou ou destacou os filmes influenciou minha escolha final.',
-    },
-    {
-      id: 9,
-      text: 'Senti que minha escolha foi guiada pela plataforma, além das minhas preferências pessoais.',
-    },
-    {
-      id: 10,
-      text: 'Alguns filmes chamaram minha atenção mais pela forma como foram apresentados do que pelo meu interesse prévio neles.',
-    },
-  ];
   readonly likertOptions: LikertOption[] = [
     { value: 1, label: 'Discordo totalmente' },
     { value: 2, label: 'Discordo' },
@@ -71,10 +74,20 @@ export class ChoiceFeedbackPage {
   readonly isNeutralVariant = computed(
     () => this.participantSessionService.session().experimentVariant === 'neutral',
   );
-  readonly canSubmit = computed(
-    () => Object.keys(this.selectedAnswers()).length === this.questions.length,
+  readonly questions = computed<FeedbackQuestion[]>(() =>
+    this.isNeutralVariant()
+      ? BASE_FEEDBACK_QUESTIONS
+      : [...BASE_FEEDBACK_QUESTIONS, MEDIATED_FEEDBACK_QUESTION],
+  );
+  readonly canSubmit = computed(() =>
+    this.questions().every((question) => this.selectedAnswers()[question.id] !== undefined),
   );
   readonly isSubmitDisabled = computed(() => this.isSubmitting() || this.submitSuccess());
+
+  ngAfterViewInit(): void {
+    this.centerLikertNeutralOptions();
+    this.likertScales?.changes.subscribe(() => this.centerLikertNeutralOptions());
+  }
 
   goToParticipantEntry(): void {
     void this.router.navigateByUrl('/participant-entry');
@@ -154,9 +167,9 @@ export class ChoiceFeedbackPage {
         presentation_helped_choice: answers[5],
         platform_helped_find_interesting_movies: answers[6],
         searched_more_information_before_final_choice: answers[7],
-        platform_organization_influenced_choice: answers[8],
-        felt_guided_by_platform: answers[9],
-        presentation_attracted_attention_over_prior_interest: answers[10],
+        platform_organization_influenced_choice: this.isNeutralVariant() ? null : answers[8],
+        felt_guided_by_platform: null,
+        presentation_attracted_attention_over_prior_interest: null,
         additional_comments: this.getAdditionalCommentsPayload(),
       })
       .subscribe({
@@ -181,5 +194,30 @@ export class ChoiceFeedbackPage {
     textarea.style.height = 'auto';
     textarea.style.height = `${Math.min(textarea.scrollHeight, maxHeight)}px`;
     textarea.style.overflowY = textarea.scrollHeight > maxHeight ? 'auto' : 'hidden';
+  }
+
+  private centerLikertNeutralOptions(): void {
+    if (window.innerWidth > 640) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      this.likertScales?.forEach(({ nativeElement }) => {
+        if (nativeElement.scrollWidth <= nativeElement.clientWidth) {
+          return;
+        }
+
+        const neutralOption = nativeElement.querySelector<HTMLElement>(
+          '.likert-option[aria-label^="4 -"]',
+        );
+
+        if (!neutralOption) {
+          return;
+        }
+
+        nativeElement.scrollLeft =
+          neutralOption.offsetLeft + neutralOption.offsetWidth / 2 - nativeElement.clientWidth / 2;
+      });
+    });
   }
 }

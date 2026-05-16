@@ -58,8 +58,8 @@
         <span class="choice-feedback-hero__kicker">Etapa final</span>
         <h1>Questionário final</h1>
         <p>
-          Leia cada afirmação e indique seu grau de concordância com base na sua experiência ao
-          selecionar os filmes.
+          Leia cada afirmação e indique seu grau de concordância de 1 a 7, com base na sua
+          experiência ao selecionar os filmes.
         </p>
       </div>
     </header>
@@ -82,7 +82,7 @@
         <p class="question-card__error" role="alert">{{ submitError() }}</p>
       }
 
-      @for (question of questions; track question.id) {
+      @for (question of questions(); track question.id) {
         <article
           class="question-card glass-surface"
           [class.has-error]="shouldShowQuestionError(question.id)"
@@ -93,6 +93,7 @@
           </div>
 
           <div
+            #likertScale
             class="likert-scale"
             role="radiogroup"
             [attr.aria-label]="'Pergunta ' + question.id"
