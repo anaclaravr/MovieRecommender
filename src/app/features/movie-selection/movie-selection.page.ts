@@ -1013,10 +1013,6 @@ export class MovieSelectionPage implements AfterViewInit, OnDestroy, OnInit {
   private currentGridColumns(): number {
     const width = this.viewportWidth();
 
-    if (width <= 720) {
-      return 1;
-    }
-
     if (width <= 1080) {
       return 2;
     }

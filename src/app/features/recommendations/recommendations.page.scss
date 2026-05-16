@@ -1255,12 +1255,46 @@
   }
 
   .recommendations-hero h1 {
-    font-size: 2.25rem;
+    font-size: 2rem;
+    line-height: 1.12;
   }
 
-  .recommendations-hero__summary,
-  .liked-strip {
+  .recommendations-hero__summary {
     grid-template-columns: 1fr;
+  }
+
+  .liked-strip,
+  .recommendation-grid,
+  .recommendations-page.is-details-drawer-open .recommendation-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .liked-strip {
+    gap: 0.65rem;
+  }
+
+  .liked-card {
+    grid-template-columns: 3.45rem minmax(0, 1fr);
+    gap: 0.42rem;
+    padding: 0.36rem;
+    border-radius: 0.92rem;
+  }
+
+  .liked-card__poster {
+    border-radius: 0.68rem;
+  }
+
+  .liked-card__meta h3 {
+    font-size: 0.82rem;
+  }
+
+  .liked-card__meta p {
+    font-size: 0.7rem;
+  }
+
+  .recommendation-grid,
+  .recommendations-page.is-details-drawer-open .recommendation-grid {
+    gap: 0.72rem;
   }
 
   .recommendation-card,
@@ -1269,6 +1303,45 @@
   .recommendations-page.is-details-drawer-open .recommendation-card,
   .recommendations-page.is-details-drawer-open .recommendation-card.is-top-ranked,
   .recommendations-page.is-details-drawer-open .recommendation-card--skeleton:nth-child(-n + 3) {
-    grid-column: 1 / -1;
+    grid-column: span 1;
+    border-radius: 0.95rem;
+  }
+
+  .recommendation-card__body,
+  .recommendations-page.is-details-drawer-open .recommendation-card__body {
+    gap: 0.5rem;
+    padding: 0.68rem;
+  }
+
+  .recommendation-card__poster-chip {
+    min-height: 1.45rem;
+    max-width: 100%;
+    padding-inline: 0.46rem;
+    font-size: 0.62rem;
+  }
+
+  .recommendation-card__poster-chips {
+    inset-inline: 0.58rem;
+    bottom: 0.58rem;
+  }
+
+  .recommendation-card__rank {
+    top: 0.52rem;
+    left: 0.52rem;
+    min-width: 2.15rem;
+    min-height: 1.72rem;
+    padding-inline: 0.48rem;
+    font-size: 0.72rem;
+  }
+
+  .recommendation-card__title {
+    font-size: 0.9rem;
+    line-height: 1.16;
+  }
+
+  .recommendation-card__genres,
+  .recommendation-card__synopsis {
+    font-size: 0.76rem;
+    line-height: 1.35;
   }
 }
